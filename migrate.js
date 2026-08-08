@@ -3,55 +3,34 @@ const Database = require('better-sqlite3');
 
 const db = new Database('catalog.sqlite');
 
-// 1. قراءة ملف index.html واستخراج الأصناف
-const htmlContent = fs.readFileSync('index.html', 'utf8');
-const match = htmlContent.match(/const PRODUCTS\s*=\s*(\[[\s\S]*?\]);/);
+const products = db.prepare('SELECT id, code, package_code FROM products ORDER BY id').all();
+const imageFiles = fs.readdirSync('images')
+  .filter(name => /\.(jpe?g|png|webp|gif)$/i.test(name))
+  .sort();
 
-if (!match) {
-  console.error('❌ لم يتم العثور على مصفوفة PRODUCTS داخل index.html');
-  process.exit(1);
-}
-
-const products = JSON.parse(match[1]);
-const imageFiles = fs.readdirSync('images');
+const beforeCount = db.prepare('SELECT COUNT(*) AS c FROM product_images').get().c;
 
 console.log(`📦 جاري معالجة ${products.length} صنف و ${imageFiles.length} صورة...`);
-
-const insertProd = db.prepare(`
-  INSERT INTO products (name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`);
 
 const insertImg = db.prepare(`
   INSERT INTO product_images (product_id, image_path) VALUES (?, ?)
 `);
 
-let importedCount = 0;
 let linkedImagesCount = 0;
 
 const transaction = db.transaction(() => {
   for (const p of products) {
-    const info = insertProd.run(
-      p.name,
-      p.code || '',
-      p.package_code || '',
-      p.barcode || '',
-      p.qty_pcs || 0,
-      p.box_fill || 1,
-      p.qty_boxes || 0,
-      p.warehouse || ''
-    );
-    const productId = info.lastInsertRowid;
-    importedCount++;
+    const code = String(p.code || '').trim();
+    if (!code) continue;
 
-    // مطابقة الصور بمجلد images تلقائياً مع كود المادة فقط
+    const lowerCode = code.toLowerCase();
     const matchedImgs = imageFiles.filter(img => {
       const lowerImg = img.toLowerCase();
-      return p.code && lowerImg.includes(p.code.toLowerCase());
+      return lowerImg.includes(lowerCode);
     });
 
     for (const img of matchedImgs) {
-      insertImg.run(productId, `images/${img}`);
+      insertImg.run(p.id, `images/${img}`);
       linkedImagesCount++;
     }
   }
@@ -59,6 +38,9 @@ const transaction = db.transaction(() => {
 
 transaction();
 
-console.log(`🎉 اكتمل النقل بنجاح!`);
-console.log(`🔹 تم إدخال ${importedCount} صنف إلى SQLite.`);
-console.log(`🔹 تم ربط ${linkedImagesCount} صورة بالأصناف أوتوماتيكياً.`);
+const afterCount = db.prepare('SELECT COUNT(*) AS c FROM product_images').get().c;
+
+console.log(`🎉 اكتمل ربط الصور بنجاح!`);
+console.log(`🔹 كانت الصور المرتبطة قبل التشغيل: ${beforeCount}`);
+console.log(`🔹 أصبحت الصور المرتبطة بعد التشغيل: ${afterCount}`);
+console.log(`🔹 تم ربط ${linkedImagesCount} صورة بالأصناف أوتوماتيكياً بناءً على الكود فقط.`);

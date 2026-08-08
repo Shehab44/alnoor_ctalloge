@@ -452,9 +452,25 @@ function render(){
     </div>`;
   }
   if(end<filtered.length){
-    h+=`<div class="lmw"><button class="lmb" onclick="more()">تحميل المزيد (${esc((filtered.length-end).toLocaleString('ar-EG'))} صنف)</button></div>`;
+    h+=`<div class="lmw" id="load-more-sentinel"><span style="color:var(--muted);font-size:12px">تحميل المزيد…</span></div>`;
   }
   document.getElementById('grid').innerHTML=h;
+  setupInfiniteScroll();
+}
+
+let loadObserver=null;
+function setupInfiniteScroll(){
+  const sentinel=document.getElementById('load-more-sentinel');
+  if(!sentinel) return;
+  if(loadObserver){ loadObserver.disconnect(); loadObserver=null; }
+  if('IntersectionObserver' in window){
+    loadObserver=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)) more();
+    },{root:null,threshold:0.25});
+    loadObserver.observe(sentinel);
+  } else {
+    sentinel.innerHTML='<button class="lmb" onclick="more()">تحميل المزيد</button>';
+  }
 }
 
 function bindGridEvents(){
@@ -563,16 +579,17 @@ function closeImgModal(){
   imgPickerCode=null;
 }
 async function applyPickedImage(blob){
-  const {dataUrl, blob:compressedBlob}=await compressImage(blob);
+  const {blob:compressedBlob}=await compressImage(blob);
   const p=findByKey(imgPickerCode);
   if(!p) return;
-  if(imagesDirectoryHandle){
-    p.image_url=await saveImageToFolder(buildImageFileName(p), compressedBlob);
-  } else {
-    p.image_url=dataUrl;
-    alert('تنويه: ما في مجلد صور مربوط، الصورة رح تنحفظ داخل ملف الكتالوج وتزيد حجمه. اضغط زر 📁 لربط مجلد الصور وتفادي هيك مستقبلاً.');
+  try{
+    await uploadImageToServer(p.id, compressedBlob);
+    await loadProductsFromDB();
+    closeImgModal();
+  }catch(err){
+    console.error('فشل رفع الصورة', err);
+    alert(err.message || 'فشل رفع الصورة');
   }
-  run(); closeImgModal();
 }
 document.getElementById('cardImgInput').addEventListener('change', function(e){
   const file=e.target.files[0];
@@ -606,6 +623,42 @@ document.addEventListener('paste', async function(e){
 // ===== إضافة / تعديل صنف =====
 let formImageData='';
 let formImageBlob=null; // الصورة المضغوطة الجديدة (لسا ما انكتبت كملف) - بتنكتب فعلياً وقت الحفظ بـ saveForm
+
+async function uploadImageToServer(productId, blob){
+  const formData=new FormData();
+  const ext=(blob.type.split('/')[1]||'jpg').toLowerCase();
+  const safeExt=ext==='jpeg'?'jpg':ext;
+  formData.append('image', blob, `image_${Date.now()}.${safeExt}`);
+  const response=await fetch(`/api/products/${productId}/upload`, {method:'POST', body:formData});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(result.error || 'فشل رفع الصورة');
+  return result;
+}
+
+async function saveProductToServer(payload, method='POST', productId=null){
+  const response=await fetch(productId ? `/api/products/${productId}` : '/api/products', {
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(result.error || 'فشل حفظ الصنف');
+  return result;
+}
+
+function findSavedProduct(payload){
+  const code=String(payload.code||'').trim();
+  const warehouse=String(payload.warehouse||'').trim();
+  const packageCode=String(payload.package_code||'').trim();
+  const barcode=String(payload.barcode||'').trim();
+  return DATA.find(d =>
+    String(d.code||'').trim()===code &&
+    String(d.warehouse||'').trim()===warehouse &&
+    String(d.package_code||'').trim()===packageCode &&
+    String(d.barcode||'').trim()===barcode
+  );
+}
+
 function openAddForm(){
   curCode=null;
   fillForm({name:'',code:'',package_code:'',barcode:'',qty_pcs:0,box_fill:1,qty_boxes:0,warehouse:'مستودع 1',image_url:''});
@@ -656,7 +709,7 @@ async function saveForm(){
   const boxFill=parseFloat(document.getElementById('f_boxfill').value)||1;
   const qtyBoxesInput=document.getElementById('f_qtyboxes').value;
 
-  const obj={
+  const payload={
     name,
     code,
     package_code: document.getElementById('f_package').value.trim()||'-',
@@ -668,32 +721,33 @@ async function saveForm(){
     image_url: ''
   };
 
-  let imagePath=formImageData;
-  if(formImageBlob){
-    if(imagesDirectoryHandle){
-      imagePath=await saveImageToFolder(buildImageFileName(obj), formImageBlob);
-    } else {
-      imagePath=formImageData;
-      alert('تنويه: ما في مجلد صور مربوط، الصورة رح تنحفظ داخل ملف الكتالوج وتزيد حجمه. اضغط زر 📁 لربط مجلد الصور.');
-    }
-  }
-  obj.image_url=imagePath;
-
-  const duplicateNote=validateProductDuplication(obj);
+  const duplicateNote=validateProductDuplication(payload);
   if(duplicateNote) alert(duplicateNote);
 
-  const idx = findByKey(curItemKey) ? DATA.findIndex(d=>buildItemKey(d)===curItemKey)
-    : DATA.findIndex(d=>String(d.code||'')===String(code)
-      && String(d.package_code||'')===String(obj.package_code)
-      && String(d.warehouse||'')===String(obj.warehouse)
-      && String(d.barcode||'')===String(obj.barcode));
+  const existingProduct=findByKey(curItemKey) || findByCode(code);
+  try{
+    const saved = existingProduct
+      ? await saveProductToServer(payload, 'PUT', existingProduct.id)
+      : await saveProductToServer(payload, 'POST');
 
-  if(idx>-1) DATA[idx]=obj; else DATA.push(obj);
-  curItemKey=buildItemKey(obj);
-  formImageData='';
-  formImageBlob=null;
-  clsForm();
-  run();
+    if(formImageBlob){
+      const productId = saved.id || existingProduct?.id;
+      if(productId){ await uploadImageToServer(productId, formImageBlob); }
+    }
+
+    formImageData='';
+    formImageBlob=null;
+    clsForm();
+    await loadProductsFromDB();
+    const refreshed=findSavedProduct(payload);
+    if(refreshed){
+      curCode=refreshed.code;
+      curItemKey=buildItemKey(refreshed);
+    }
+  }catch(err){
+    console.error('فشل حفظ الصنف', err);
+    alert(err.message || 'فشل حفظ الصنف');
+  }
 }
 
 // ===== تصدير نسخة محدّثة كملف HTML قائم بذاته =====
@@ -911,20 +965,24 @@ bindGridEvents();
 async function deleteCurrentImage(){
   const p=findByKey(curItemKey) || findByCode(curCode);
   if(!p){ return; }
-  const path=p.image_url;
-  if(!path){ alert('لا توجد صورة لهاد الصنف أساساً.'); return; }
+  const imageIds=Array.isArray(p.image_ids)?p.image_ids:[];
+  const firstImageId=imageIds[0];
+  if(!firstImageId){ alert('لا توجد صورة لهاد الصنف أساساً.'); return; }
   if(!confirm(`متأكد إنك بدك تحذف صورة الصنف "${p.name}"؟`)) return;
 
-  if(path.startsWith('images/') && imagesDirectoryHandle){
-    const fileName=path.replace('images/','');
-    try{ await imagesDirectoryHandle.removeEntry(fileName); }
-    catch(err){ console.warn('ما قدرنا نحذف الملف الفعلي من المجلد (ممكن يكون محذوف مسبقاً أو المجلد مش مربوط بنفس الجلسة)', err); }
+  try{
+    const response=await fetch(`/api/products/${p.id}/images/${firstImageId}`, {method:'DELETE'});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(result.error || 'فشل حذف الصورة');
+    await loadProductsFromDB();
+    const refreshed=findByKey(curItemKey) || findByCode(curCode);
+    if(refreshed && document.getElementById('ov').classList.contains('on')){
+      opnM(refreshed);
+    }
+  }catch(err){
+    console.error('فشل حذف الصورة', err);
+    alert(err.message || 'فشل حذف الصورة');
   }
-
-  p.image_url='';
-  document.getElementById('mi').style.display='none';
-  document.getElementById('delImgBtn').style.display='none';
-  run();
 }
 </script>
 </body>

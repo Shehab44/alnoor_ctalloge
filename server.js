@@ -12,6 +12,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+function localOnly(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress || '';
+  const isLocal = ip === '127.0.0.1' || ip === '::1' || ip.includes('::ffff:127.0.0.1');
+  if (!isLocal) {
+    return res.status(403).json({ error: 'التعديل مسموح فقط من الجهاز المحلي' });
+  }
+  next();
+}
+
 // إعداد رفع الصور الجديدة
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -48,7 +57,7 @@ app.get('/api/products', (req, res) => {
 });
 
 // API 2: إضافة صنف جديد
-app.post('/api/products', (req, res) => {
+app.post('/api/products', localOnly, (req, res) => {
   try {
     const { name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse } = req.body;
     const stmt = db.prepare(`
@@ -63,7 +72,7 @@ app.post('/api/products', (req, res) => {
 });
 
 // API 3: رفع صورة جديدة لصنف بـ ID
-app.post('/api/products/:id/upload', upload.single('image'), (req, res) => {
+app.post('/api/products/:id/upload', localOnly, upload.single('image'), (req, res) => {
   try {
     const productId = req.params.id;
     if (!req.file) return res.status(400).json({ error: 'لم يتم اختيار صورة' });
@@ -77,8 +86,40 @@ app.post('/api/products/:id/upload', upload.single('image'), (req, res) => {
   }
 });
 
-// API 4: حذف صنف
-app.delete('/api/products/:id', (req, res) => {
+// API 4: تعديل صنف
+app.put('/api/products/:id', localOnly, (req, res) => {
+  try {
+    const { name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse } = req.body;
+    db.prepare(`
+      UPDATE products
+      SET name=?, code=?, package_code=?, barcode=?, qty_pcs=?, box_fill=?, qty_boxes=?, warehouse=?
+      WHERE id=?
+    `).run(name, code, package_code, barcode, qty_pcs || 0, box_fill || 1, qty_boxes || 0, warehouse || '', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API 5: حذف صورة واحدة
+app.delete('/api/products/:productId/images/:imageId', localOnly, (req, res) => {
+  try {
+    const img = db.prepare('SELECT * FROM product_images WHERE id=? AND product_id=?').get(req.params.imageId, req.params.productId);
+    if (!img) return res.status(404).json({ error: 'الصورة غير موجودة' });
+
+    db.prepare('DELETE FROM product_images WHERE id=?').run(req.params.imageId);
+
+    const filePath = path.join(__dirname, img.image_path);
+    fs.unlink(filePath, () => {});
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API 6: حذف صنف
+app.delete('/api/products/:id', localOnly, (req, res) => {
   try {
     db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
     res.json({ success: true });
