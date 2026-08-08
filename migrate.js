@@ -44,12 +44,10 @@ const transaction = db.transaction(() => {
     const productId = info.lastInsertRowid;
     importedCount++;
 
-    // مطابقة الصور بمجلد images تلقائياً مع كود المادة أو رمز الطرد
+    // مطابقة الصور بمجلد images تلقائياً مع كود المادة فقط
     const matchedImgs = imageFiles.filter(img => {
       const lowerImg = img.toLowerCase();
-      const codeMatch = p.code && lowerImg.includes(p.code.toLowerCase());
-      const pkgMatch = p.package_code && lowerImg.includes(p.package_code.toLowerCase());
-      return codeMatch || pkgMatch;
+      return p.code && lowerImg.includes(p.code.toLowerCase());
     });
 
     for (const img of matchedImgs) {

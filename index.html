@@ -360,8 +360,6 @@ function getImg(p){
   if(folderMatches){ return `images/${folderMatches}`; }
 
   const codeKey=safeImageNamePart(p.code);
-  const pkgKey=safeImageNamePart(p.package_code);
-  if(pkgKey && IMAGES[pkgKey]) return IMAGES[pkgKey];
   if(codeKey && IMAGES[codeKey]) return IMAGES[codeKey];
   return null;
 }
