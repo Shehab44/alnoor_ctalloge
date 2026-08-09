@@ -100,6 +100,19 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .addimg-btn:hover{background:rgba(0,0,0,.85);border-color:var(--gold);color:var(--gold)}
 
 .fab-bar{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:10px;z-index:250}
+.top-actions{position:fixed;top:16px;left:16px;display:flex;align-items:center;gap:8px;z-index:260}
+.top-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:rgba(15,23,42,.92);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.top-btn:hover{border-color:var(--gold);color:var(--gold)}
+.top-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;min-width:18px;text-align:center}
+.menu{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:10px;min-width:180px;box-shadow:0 10px 25px rgba(0,0,0,.35);display:none;overflow:hidden}
+.menu.open{display:block}
+.menu button{display:block;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);text-align:right;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer}
+.menu button:hover{background:rgba(201,168,76,.12);color:var(--gold)}
+.notif-list{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:10px;min-width:260px;max-height:320px;overflow:auto;display:none;box-shadow:0 10px 25px rgba(0,0,0,.35)}
+.notif-list.open{display:block}
+.notif-item{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.notif-item:last-child{border-bottom:none}
+.notif-item .time{font-size:10px;color:var(--muted);margin-top:2px}
 .fab{width:52px;height:52px;border-radius:50%;border:none;font-size:21px;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
 .fab.add{background:var(--gold);color:#111}
 .fab.exp{background:#1e293b;color:var(--gold);border:1.5px solid var(--gold)}
@@ -132,6 +145,20 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 </style>
 </head>
 <body>
+
+<div class="top-actions">
+  <div style="position:relative">
+    <button class="top-btn" onclick="toggleMenu(this)">⋮</button>
+    <div class="menu" id="topMenu">
+      <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
+    </div>
+  </div>
+  <div style="position:relative">
+    <button class="top-btn" onclick="toggleNotifications()">🔔</button>
+    <span class="top-badge" id="notifBadge" style="display:none">0</span>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+</div>
 
 <div class="header">
   <div class="h-top">
@@ -403,7 +430,7 @@ function run(){
   });
   if(sortByBoxes) filtered.sort((a,b)=>b.qty_boxes-a.qty_boxes);
   page=0;
-  document.getElementById('rc').innerHTML=`<strong>${esc(filtered.length.toLocaleString('ar-EG'))}</strong> صنف`;
+  document.getElementById('rc').innerHTML=`<strong>${esc(filtered.length)}</strong> صنف`;
   render();
   updateStats();
 }
@@ -445,7 +472,7 @@ function render(){
           </div>
           <div class="qty-box">
             <span class="qty-label">إجمالي القطع</span>
-            <span class="qty-val" style="color:var(--muted);font-size:12px">${esc(p.qty_pcs.toLocaleString('ar-EG'))}</span>
+            <span class="qty-val" style="color:var(--muted);font-size:12px">${esc(p.qty_pcs)}</span>
           </div>
         </div>
       </div>
@@ -508,14 +535,13 @@ function opnM(p){
       <div class="lbl">تعبئة الصندوق / قطعة</div>
     </div>
     <div class="mqty-sub">
-      <div class="num">${esc(p.qty_pcs.toLocaleString('ar-EG'))}</div>
+      <div class="num">${esc(p.qty_pcs)}</div>
       <div class="lbl">إجمالي القطع</div>
     </div>`;
 
   document.getElementById('md').innerHTML=`
     <div class="mi2"><div class="ml">رمز الطرد</div><div class="mv">${esc(p.package_code||'—')}</div></div>
     <div class="mi2"><div class="ml">كود المادة</div><div class="mv" style="font-size:12px">${esc(p.code||'—')}</div></div>
-    <div class="mi2 mfull"><div class="ml">باركود</div><div class="mv" style="font-size:12px;letter-spacing:1px">${esc(p.barcode||'—')}</div></div>
     <div class="mi2"><div class="ml">المستودع</div><div class="mv" style="font-size:13px">${esc(p.warehouse)}</div></div>`;
 
   document.getElementById('ov').classList.add('on');
@@ -782,6 +808,99 @@ function updateStats(){
   document.getElementById('s2').textContent=`م2: ${DATA.filter(p=>p.warehouse==='مستودع 2').length}`;
   document.getElementById('s3').textContent=`م3: ${DATA.filter(p=>p.warehouse==='مستودع 3').length}`;
 }
+
+function toggleMenu(button){
+  const menu=document.getElementById('topMenu');
+  const open=menu.classList.toggle('open');
+  if(!open) return;
+  document.getElementById('notifList').classList.remove('open');
+  const rect=button.getBoundingClientRect();
+  menu.style.left='0px';
+  menu.style.top='48px';
+}
+
+async function syncWarehousesBtn(){
+  try{
+    const response=await fetch('/api/sync-warehouses', {method:'POST'});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(result.error || 'فشل المزامنة');
+    const summary=result.summary||{};
+    const total=summary.total||{};
+    alert(`تحديث: ${total.updated || 0} · إضافة: ${total.added || 0} · حذف: ${total.deleted || 0}`);
+    await loadProductsFromDB();
+    await loadNotifications();
+  }catch(err){
+    console.error('فشل مزامنة المستودعات', err);
+    alert(err.message || 'فشل مزامنة المستودعات');
+  }
+}
+
+function toggleNotifications(){
+  const list=document.getElementById('notifList');
+  const open=list.classList.toggle('open');
+  document.getElementById('topMenu').classList.remove('open');
+  if(open){ loadNotifications(); }
+  if(!open){
+    localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
+    updateNotifBadge();
+  }
+}
+
+async function loadNotifications(){
+  try{
+    const response=await fetch('/api/notifications');
+    const items=await response.json();
+    const list=document.getElementById('notifList');
+    if(!Array.isArray(items) || !items.length){
+      list.innerHTML='<div class="notif-item">لا توجد إشعارات بعد</div>';
+      return;
+    }
+    list.innerHTML=items.map(item=>`<div class="notif-item"><div>${esc(item.message)}</div><div class="time">${esc(new Date(item.created_at).toLocaleString('ar-EG'))}</div></div>`).join('');
+    localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
+    updateNotifBadge();
+  }catch(err){
+    console.error('فشل تحميل الإشعارات', err);
+  }
+}
+
+function updateNotifBadge(){
+  const badge=document.getElementById('notifBadge');
+  const lastSeen=localStorage.getItem('lastSeenNotifTime');
+  const notifications=JSON.parse(localStorage.getItem('cachedNotifications')||'[]');
+  const unread=Array.isArray(notifications)?notifications.filter(item=>!lastSeen || item.created_at>lastSeen).length:0;
+  if(unread>0){ badge.textContent=unread; badge.style.display='inline-flex'; }
+  else { badge.style.display='none'; }
+}
+
+function refreshNotificationsState(items){
+  localStorage.setItem('cachedNotifications', JSON.stringify(items||[]));
+  updateNotifBadge();
+}
+
+setInterval(async()=>{
+  try{
+    const response=await fetch('/api/notifications');
+    const items=await response.json();
+    if(Array.isArray(items)) refreshNotificationsState(items);
+  }catch(err){ console.warn('فشل تحديث الإشعارات', err); }
+}, 60000);
+
+window.addEventListener('click', e=>{
+  const menu=document.getElementById('topMenu');
+  const list=document.getElementById('notifList');
+  if(!e.target.closest('.top-actions')){
+    menu.classList.remove('open');
+    list.classList.remove('open');
+  }
+});
+
+(async function initNotifications(){
+  try{
+    const response=await fetch('/api/notifications');
+    const items=await response.json();
+    if(Array.isArray(items)) refreshNotificationsState(items);
+  }catch(err){ console.warn('فشل تحميل الإشعارات الابتدائي', err); }
+})();
 
 /* ===================================================================
    إدارة مجلد الصور المحلي (File System Access API)

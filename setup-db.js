@@ -26,4 +26,14 @@ db.prepare(`
   )
 `).run();
 
+// إنشاء جدول الإشعارات
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )
+`).run();
+
 console.log('✅ تم إنشاء قاعدة البيانات catalog.sqlite والجدولين بنجاح!');
