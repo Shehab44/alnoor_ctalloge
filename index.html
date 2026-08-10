@@ -30,10 +30,11 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .sic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:17px;pointer-events:none}
 .sc{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;display:none;line-height:1;padding:0}
 
-.filters{display:flex;gap:6px;padding:8px 16px;overflow-x:auto;background:rgba(15,23,42,.5);border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none}
+.filters{display:flex;gap:6px;padding:8px 16px 10px;overflow-x:auto;background:linear-gradient(180deg,rgba(15,23,42,.45),rgba(15,23,42,.7));border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
-.fb{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.fb.on{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700}
+.fb{padding:5px 14px;border-radius:20px;border:1px solid rgba(201,168,76,.18);background:rgba(17,24,39,.75);color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .18s ease;flex-shrink:0}
+.fb:hover{border-color:rgba(201,168,76,.4);color:var(--gold);transform:translateY(-1px)}
+.fb.on{background:linear-gradient(180deg,var(--gold),#b8902a);color:#111;border-color:var(--gold);font-weight:700;box-shadow:0 6px 18px rgba(201,168,76,.22)}
 
 .rbar{padding:7px 16px;font-size:12px;color:var(--muted);background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:8px}
 .rbar strong{color:var(--gold)}
@@ -100,19 +101,70 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .addimg-btn:hover{background:rgba(0,0,0,.85);border-color:var(--gold);color:var(--gold)}
 
 .fab-bar{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:10px;z-index:250}
-.top-actions{position:fixed;top:16px;left:16px;display:flex;align-items:center;gap:8px;z-index:260}
-.top-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:rgba(15,23,42,.92);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:0 4px 12px rgba(0,0,0,.35)}
-.top-btn:hover{border-color:var(--gold);color:var(--gold)}
-.top-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;min-width:18px;text-align:center}
-.menu{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:10px;min-width:180px;box-shadow:0 10px 25px rgba(0,0,0,.35);display:none;overflow:hidden}
+.top-actions{position:fixed;top:16px;left:16px;display:flex;align-items:center;z-index:260}
+.action-group{display:flex;align-items:center;gap:8px;padding:4px;border:1px solid rgba(201,168,76,.18);background:rgba(15,23,42,.74);border-radius:12px;box-shadow:0 10px 22px rgba(0,0,0,.22);backdrop-filter:blur(6px)}
+.top-btn{width:38px;height:38px;border-radius:10px;border:1px solid rgba(201,168,76,.18);background:linear-gradient(180deg,rgba(30,41,59,.9),rgba(15,23,42,.9));color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);padding:0;transition:all .18s ease}
+.top-btn:hover{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,rgba(39,55,77,.96),rgba(15,23,42,.96));transform:translateY(-1px)}
+.top-btn:active{transform:translateY(0)}
+.top-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;min-width:18px;text-align:center;border:2px solid rgba(15,23,42,.9)}
+.menu{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:12px;min-width:180px;box-shadow:0 12px 28px rgba(0,0,0,.35);display:none;overflow:hidden;z-index:20}
 .menu.open{display:block}
-.menu button{display:block;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);text-align:right;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer}
+.menu button{display:block;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);text-align:right;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;transition:background .15s ease,color .15s ease}
 .menu button:hover{background:rgba(201,168,76,.12);color:var(--gold)}
-.notif-list{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:10px;min-width:260px;max-height:320px;overflow:auto;display:none;box-shadow:0 10px 25px rgba(0,0,0,.35)}
-.notif-list.open{display:block}
+.notif-list{display:none}
 .notif-item{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
 .notif-item:last-child{border-bottom:none}
 .notif-item .time{font-size:10px;color:var(--muted);margin-top:2px}
+
+.notifications-view{position:fixed;inset:0;background:rgba(2,6,23,.96);z-index:320;display:none;overflow-y:auto;padding:20px 20px 56px}
+.notifications-view.open{display:block}
+.notifications-shell{width:min(920px,100%);margin:0 auto;background:rgba(15,23,42,.82);border:1px solid rgba(201,168,76,.22);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.notifications-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 18px 14px;border-bottom:1px solid rgba(201,168,76,.14);background:linear-gradient(180deg,rgba(201,168,76,.08),rgba(15,23,42,.2))}
+.notifications-title{font-size:18px;font-weight:800;color:var(--gold)}
+.notifications-actions{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(201,168,76,.12)}
+.notifications-markall{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.26);color:var(--gold);padding:8px 14px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.notifications-close{width:36px;height:36px;border-radius:10px;border:1px solid rgba(201,168,76,.25);background:rgba(15,23,42,.8);color:var(--text);cursor:pointer;font-size:22px;line-height:1}
+.notifications-list{padding:10px 12px 18px}
+.notification-row{display:flex;align-items:flex-start;gap:12px;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.04);background:rgba(17,24,39,.72);margin-bottom:10px}
+.notification-row.unread{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.22)}
+.notification-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(201,168,76,.12);font-size:18px;flex-shrink:0}
+.notification-body{flex:1;min-width:0}
+.notification-text{font-size:13px;line-height:1.7;color:var(--text)}
+.notification-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:11px;color:var(--muted)}
+.notification-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block;box-shadow:0 0 12px rgba(201,168,76,.5)}
+.notification-empty{padding:30px 20px;text-align:center;color:var(--muted);font-size:14px}
+
+.notify-panel{position:fixed;top:16px;right:90px;z-index:310;width:min(360px,calc(100vw - 110px));display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.catalog-toast{pointer-events:auto;background:rgba(17,24,39,.96);border:1px solid var(--border);border-right:4px solid var(--gold);border-radius:12px;padding:12px 14px;box-shadow:0 8px 18px rgba(0,0,0,.32);animation:toastIn .22s ease both}
+.catalog-toast.error{border-right-color:var(--red)}
+.catalog-toast.success{border-right-color:var(--green)}
+.catalog-toast.warning{border-right-color:var(--yellow)}
+.catalog-toast-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.catalog-toast-title{font-weight:700;color:var(--gold);font-size:13px}
+.catalog-toast-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0}
+.catalog-toast-body{font-size:12px;color:var(--text);line-height:1.6}
+.catalog-toast-table{width:100%;margin-top:8px;border-collapse:collapse;font-size:11px}
+.catalog-toast-table th,.catalog-toast-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:right}
+.catalog-toast-table th{color:var(--muted);font-weight:600}
+.catalog-toast-table td strong{color:var(--gold)}
+.catalog-toast-list{margin:8px 0 0 0;padding-right:16px;max-height:140px;overflow:auto}
+.catalog-toast-list li{margin-bottom:4px;color:var(--text);font-size:11px}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes welcomeRise{0%{opacity:0;transform:translateY(30px) scale(.96)}20%{opacity:1}60%{opacity:1;transform:translateY(-6px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes welcomeGlow{0%,100%{box-shadow:0 0 0 rgba(201,168,76,0)}50%{box-shadow:0 0 32px rgba(201,168,76,.35)}}
+@keyframes welcomeLine{0%{opacity:0;width:0}30%{opacity:1}100%{opacity:1;width:110px}}
+#welcomeOverlay{position:fixed;inset:0;background:radial-gradient(circle at center,rgba(17,24,39,.94),rgba(2,6,23,.98));display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1000;transition:opacity .9s ease,visibility .9s ease}
+#welcomeOverlay::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(rgba(201,168,76,.08),rgba(201,168,76,.02)),
+  repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 2px, transparent 2px 16px),
+  repeating-linear-gradient(-45deg, rgba(201,168,76,.04) 0 2px, transparent 2px 16px);
+  opacity:.9}
+#welcomeOverlay.hidden{opacity:0;visibility:hidden}
+.welcome-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:38px 46px;border:1px solid rgba(201,168,76,.35);border-radius:22px;background:rgba(15,23,42,.48);backdrop-filter:blur(4px);animation:welcomeGlow 3.2s ease-in-out infinite alternate, welcomeRise 2.8s cubic-bezier(.2,.8,.2,1) both}
+.welcome-mark{font-size:96px;font-weight:900;letter-spacing:12px;color:var(--gold);text-shadow:0 0 25px rgba(201,168,76,.28);line-height:1;animation:welcomeRise 2.2s ease both}
+.welcome-name{font-size:20px;font-weight:700;letter-spacing:1px;color:#f8fafc;animation:welcomeRise 2.6s ease .2s both}
+.welcome-sub{font-size:12px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;opacity:.9;animation:welcomeRise 2.9s ease .35s both}
+.welcome-line{width:110px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin-top:4px;animation:welcomeLine 2.4s ease .5s both}
 .fab{width:52px;height:52px;border-radius:50%;border:none;font-size:21px;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
 .fab.add{background:var(--gold);color:#111}
 .fab.exp{background:#1e293b;color:var(--gold);border:1.5px solid var(--gold)}
@@ -146,17 +198,27 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 </head>
 <body>
 
-<div class="top-actions">
-  <div style="position:relative">
-    <button class="top-btn" onclick="toggleMenu(this)">⋮</button>
-    <div class="menu" id="topMenu">
-      <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
-    </div>
+<div id="welcomeOverlay">
+  <div class="welcome-card" aria-label="شعار المتجر">
+    <div class="welcome-mark">AF</div>
+    <div class="welcome-name">كتالوج المستودعات</div>
+    <div class="welcome-line"></div>
+    <div class="welcome-sub">AF</div>
   </div>
-  <div style="position:relative">
-    <button class="top-btn" onclick="toggleNotifications()">🔔</button>
-    <span class="top-badge" id="notifBadge" style="display:none">0</span>
-    <div class="notif-list" id="notifList"></div>
+</div>
+
+<div class="notify-panel" id="notifyPanel"></div>
+
+<div class="notifications-view" id="notificationsView">
+  <div class="notifications-shell">
+    <div class="notifications-header">
+      <div class="notifications-title">الإشعارات</div>
+      <button class="notifications-close" onclick="toggleNotifications(false)" aria-label="إغلاق">×</button>
+    </div>
+    <div class="notifications-actions">
+      <button class="notifications-markall" id="markAllReadBtn">تحديد الكل كمقروء</button>
+    </div>
+    <div class="notifications-list" id="notificationsPageList"></div>
   </div>
 </div>
 
@@ -187,6 +249,19 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
   <button class="fb" onclick="setF('an',this)">AN</button>
   <button class="fb" onclick="setF('b',this)">B-</button>
   <button class="fb" onclick="setF('m',this)">M-</button>
+  <div style="display:flex; align-items:center; gap:8px; margin-right:auto;">
+    <div style="position:relative;">
+      <button class="top-btn" onclick="toggleNotifications()">🔔</button>
+      <span class="top-badge" id="notifBadge" style="display:none">0</span>
+      <div class="notif-list" id="notifList"></div>
+    </div>
+    <div style="position:relative;">
+      <button class="fb" id="filterMenuBtn" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
+      <div class="menu" id="topMenu">
+        <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="rbar">
@@ -809,55 +884,170 @@ function updateStats(){
   document.getElementById('s3').textContent=`م3: ${DATA.filter(p=>p.warehouse==='مستودع 3').length}`;
 }
 
+function pushCatalogToast({title='تنبيه', body='', type='info', duration=5000, html=''} = {}){
+  const panel=document.getElementById('notifyPanel');
+  const toast=document.createElement('div');
+  toast.className=`catalog-toast ${type}`;
+  toast.innerHTML=`
+    <div class="catalog-toast-header">
+      <div class="catalog-toast-title">${esc(title)}</div>
+      <button class="catalog-toast-close" aria-label="إغلاق">×</button>
+    </div>
+    <div class="catalog-toast-body">${html ? html : esc(body)}</div>
+  `;
+  toast.querySelector('.catalog-toast-close').addEventListener('click', ()=>toast.remove());
+  panel.appendChild(toast);
+  setTimeout(()=>{ toast.style.opacity='0'; toast.style.transform='translateY(-8px)'; setTimeout(()=>toast.remove(), 240); }, duration);
+}
+
+function renderSyncSummary(result){
+  const summary=result.summary||{};
+  const details=result.details||{};
+  const total=summary.total||{};
+  const added=(details.added||[]).slice(0,10);
+  const deleted=(details.deleted||[]).slice(0,10);
+  const tableHtml=`
+    <table class="catalog-toast-table">
+      <thead>
+        <tr><th>النوع</th><th>العدد</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>التحديث</td><td><strong>${total.updated||0}</strong></td></tr>
+        <tr><td>الإضافة</td><td><strong>${total.added||0}</strong></td></tr>
+        <tr><td>الحذف</td><td><strong>${total.deleted||0}</strong></td></tr>
+        <tr><td>المتجاهلة</td><td><strong>${total.skippedRows||0}</strong></td></tr>
+      </tbody>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <div>
+        <div style="color:var(--gold);font-size:11px;font-weight:700;margin-bottom:4px;">أصناف مضافة</div>
+        <ul class="catalog-toast-list">${added.length ? added.map(item=>`<li>${esc(item.name || item.code || '—')} · ${esc(item.warehouse || '—')}</li>`).join('') : '<li>لا يوجد</li>'}</ul>
+      </div>
+      <div>
+        <div style="color:var(--red);font-size:11px;font-weight:700;margin-bottom:4px;">أصناف محذوفة</div>
+        <ul class="catalog-toast-list">${deleted.length ? deleted.map(item=>`<li>${esc(item.name || item.code || '—')} · ${esc(item.warehouse || '—')}</li>`).join('') : '<li>لا يوجد</li>'}</ul>
+      </div>
+    </div>
+  `;
+  pushCatalogToast({ title: 'ملخص المزامنة', body: '', type: 'success', duration: 12000, html: tableHtml });
+}
+
 function toggleMenu(button){
   const menu=document.getElementById('topMenu');
   const open=menu.classList.toggle('open');
   if(!open) return;
-  document.getElementById('notifList').classList.remove('open');
-  const rect=button.getBoundingClientRect();
-  menu.style.left='0px';
-  menu.style.top='48px';
+  menu.style.left='50%';
+  menu.style.top='calc(100% + 8px)';
+  menu.style.transform='translateX(-50%)';
+  menu.style.position='absolute';
 }
 
 async function syncWarehousesBtn(){
   try{
+    pushCatalogToast({ title: 'جارٍ المزامنة', body: 'يتم قراءة ملفات المستودعات وتحليلها...', type: 'warning', duration: 12000 });
     const response=await fetch('/api/sync-warehouses', {method:'POST'});
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error || 'فشل المزامنة');
-    const summary=result.summary||{};
-    const total=summary.total||{};
-    alert(`تحديث: ${total.updated || 0} · إضافة: ${total.added || 0} · حذف: ${total.deleted || 0}`);
+    renderSyncSummary(result);
     await loadProductsFromDB();
     await loadNotifications();
   }catch(err){
     console.error('فشل مزامنة المستودعات', err);
-    alert(err.message || 'فشل مزامنة المستودعات');
+    pushCatalogToast({ title: 'فشل المزامنة', body: err.message || 'فشل المزامنة', type: 'error', duration: 8000 });
   }
 }
 
-function toggleNotifications(){
-  const list=document.getElementById('notifList');
-  const open=list.classList.toggle('open');
+function toggleNotifications(forceOpen){
+  const view=document.getElementById('notificationsView');
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !view.classList.contains('open');
+  const grid=document.querySelector('.gw');
+  const filters=document.querySelector('.filters');
+  const rbar=document.querySelector('.rbar');
+
+  view.classList.toggle('open', shouldOpen);
+  if(grid) grid.style.display = shouldOpen ? 'none' : '';
+  if(filters) filters.style.display = shouldOpen ? 'none' : '';
+  if(rbar) rbar.style.display = shouldOpen ? 'none' : '';
+
   document.getElementById('topMenu').classList.remove('open');
-  if(open){ loadNotifications(); }
-  if(!open){
-    localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
-    updateNotifBadge();
+
+  if(shouldOpen){
+    loadNotifications('panel');
+    return;
   }
+
+  localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
+  updateNotifBadge();
 }
 
-async function loadNotifications(){
+function showWelcomeScreen(){
+  const overlay=document.getElementById('welcomeOverlay');
+  setTimeout(()=>overlay.classList.add('hidden'), 5000);
+}
+
+function getNotificationIcon(type){
+  if(type==='new-product') return '🆕';
+  if(type==='low-stock') return '⚠️';
+  if(type==='sync') return '🔄';
+  return '🔔';
+}
+
+function formatNotificationTime(value){
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime())) return '—';
+  const diff=Math.max(0, Date.now()-date.getTime());
+  const minutes=Math.floor(diff/60000);
+  if(minutes < 1) return 'الآن';
+  if(minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours=Math.floor(minutes/60);
+  if(hours < 24) return `منذ ${hours} ساعة`;
+  const days=Math.floor(hours/24);
+  return `منذ ${days} يوم`;
+}
+
+function isNotificationUnread(item, lastSeen){
+  if(!item || !item.created_at) return false;
+  if(!lastSeen) return true;
+  return new Date(item.created_at).getTime() > new Date(lastSeen).getTime();
+}
+
+async function loadNotifications(mode='dropdown'){
   try{
     const response=await fetch('/api/notifications');
     const items=await response.json();
+    refreshNotificationsState(Array.isArray(items) ? items : []);
+
+    if(mode === 'panel'){
+      const list=document.getElementById('notificationsPageList');
+      const lastSeen=localStorage.getItem('lastSeenNotifTime');
+      if(!Array.isArray(items) || !items.length){
+        list.innerHTML='<div class="notification-empty">لا توجد إشعارات بعد</div>';
+        return;
+      }
+      list.innerHTML=items.map(item=>{
+        const unread=isNotificationUnread(item, lastSeen);
+        return `
+          <div class="notification-row ${unread ? 'unread' : ''}">
+            <div class="notification-icon">${getNotificationIcon(item.type)}</div>
+            <div class="notification-body">
+              <div class="notification-text">${esc(item.message)}</div>
+              <div class="notification-meta">
+                <span>${esc(formatNotificationTime(item.created_at))}</span>
+                ${unread ? '<span class="notification-dot" aria-label="غير مقروء"></span>' : '<span></span>'}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      return;
+    }
+
     const list=document.getElementById('notifList');
     if(!Array.isArray(items) || !items.length){
       list.innerHTML='<div class="notif-item">لا توجد إشعارات بعد</div>';
       return;
     }
     list.innerHTML=items.map(item=>`<div class="notif-item"><div>${esc(item.message)}</div><div class="time">${esc(new Date(item.created_at).toLocaleString('ar-EG'))}</div></div>`).join('');
-    localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
-    updateNotifBadge();
   }catch(err){
     console.error('فشل تحميل الإشعارات', err);
   }
@@ -867,7 +1057,7 @@ function updateNotifBadge(){
   const badge=document.getElementById('notifBadge');
   const lastSeen=localStorage.getItem('lastSeenNotifTime');
   const notifications=JSON.parse(localStorage.getItem('cachedNotifications')||'[]');
-  const unread=Array.isArray(notifications)?notifications.filter(item=>!lastSeen || item.created_at>lastSeen).length:0;
+  const unread=Array.isArray(notifications)?notifications.filter(item=>isNotificationUnread(item, lastSeen)).length:0;
   if(unread>0){ badge.textContent=unread; badge.style.display='inline-flex'; }
   else { badge.style.display='none'; }
 }
@@ -875,6 +1065,12 @@ function updateNotifBadge(){
 function refreshNotificationsState(items){
   localStorage.setItem('cachedNotifications', JSON.stringify(items||[]));
   updateNotifBadge();
+}
+
+function markNotificationsAsRead(){
+  localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
+  updateNotifBadge();
+  loadNotifications('panel');
 }
 
 setInterval(async()=>{
@@ -887,12 +1083,19 @@ setInterval(async()=>{
 
 window.addEventListener('click', e=>{
   const menu=document.getElementById('topMenu');
-  const list=document.getElementById('notifList');
-  if(!e.target.closest('.top-actions')){
+  const actionGroup=document.querySelector('.action-group');
+  const view=document.getElementById('notificationsView');
+  if(!e.target.closest('.action-group') && !e.target.closest('#filterMenuBtn')){
     menu.classList.remove('open');
-    list.classList.remove('open');
+  }
+  if(!e.target.closest('#notificationsView') && !e.target.closest('.top-btn') && !e.target.closest('.notifications-close') && !e.target.closest('.notifications-markall')){
+    if(view && view.classList.contains('open')){
+      toggleNotifications(false);
+    }
   }
 });
+
+document.getElementById('markAllReadBtn').addEventListener('click', markNotificationsAsRead);
 
 (async function initNotifications(){
   try{
@@ -901,6 +1104,8 @@ window.addEventListener('click', e=>{
     if(Array.isArray(items)) refreshNotificationsState(items);
   }catch(err){ console.warn('فشل تحميل الإشعارات الابتدائي', err); }
 })();
+
+showWelcomeScreen();
 
 /* ===================================================================
    إدارة مجلد الصور المحلي (File System Access API)

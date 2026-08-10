@@ -105,7 +105,8 @@ function syncWarehouses(db, options = {}) {
   const rootDir = options.rootDir || __dirname;
   const summary = {
     total: { updated: 0, added: 0, deleted: 0, skippedRows: 0 },
-    perWarehouse: {}
+    perWarehouse: {},
+    details: { added: [], deleted: [] }
   };
   const notifications = [];
 
@@ -129,7 +130,7 @@ function syncWarehouses(db, options = {}) {
 
       // دالة تحذف صنف صريح الصفر (إذا كان موجود أصلاً) — بدون أي مقارنة مع باقي أصناف المستودع
       function deleteIfExists(code, warehouseName) {
-        const existing = db.prepare('SELECT id FROM products WHERE code = ? AND warehouse = ?').get(code, warehouseName);
+        const existing = db.prepare('SELECT id, name, code, warehouse FROM products WHERE code = ? AND warehouse = ?').get(code, warehouseName);
         if (!existing) return false;
         const images = db.prepare('SELECT image_path FROM product_images WHERE product_id = ?').all(existing.id);
         for (const image of images) {
@@ -139,6 +140,11 @@ function syncWarehouses(db, options = {}) {
           }
         }
         db.prepare('DELETE FROM products WHERE id = ?').run(existing.id);
+        summary.details.deleted.push({
+          name: existing.name,
+          code: existing.code,
+          warehouse: existing.warehouse
+        });
         return true;
       }
 
@@ -177,6 +183,11 @@ function syncWarehouses(db, options = {}) {
           `).run(normalized.name, normalized.code, normalized.package_code, normalized.barcode, normalized.qty_pcs, normalized.box_fill, normalized.qty_boxes, warehouse.name);
           perWarehouseSummary.added += 1;
           summary.total.added += 1;
+          summary.details.added.push({
+            name: normalized.name,
+            code: normalized.code,
+            warehouse: normalized.warehouse
+          });
           notifications.push({ type: 'new-product', message: `صنف جديد بالكتالوج: ${normalized.name}` });
         }
       }
