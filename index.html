@@ -30,7 +30,9 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .sic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:17px;pointer-events:none}
 .sc{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;display:none;line-height:1;padding:0}
 
-.filters{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px 10px;background:linear-gradient(180deg,rgba(15,23,42,.45),rgba(15,23,42,.7));border-bottom:1px solid var(--border);flex-shrink:0}
+.filters{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:6px;padding:8px 16px 10px;background:linear-gradient(180deg,rgba(15,23,42,.45),rgba(15,23,42,.7));border-bottom:1px solid var(--border);flex-shrink:0}
+.filters::-webkit-scrollbar{display:none}
+@media(min-width:768px){.filters{flex-wrap:wrap;overflow-x:visible}}
 .fb{padding:5px 14px;border-radius:20px;border:1px solid rgba(201,168,76,.18);background:rgba(17,24,39,.75);color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .18s ease}
 .fb:hover{border-color:rgba(201,168,76,.4);color:var(--gold);transform:translateY(-1px)}
 .fb.on{background:linear-gradient(180deg,var(--gold),#b8902a);color:#111;border-color:var(--gold);font-weight:700;box-shadow:0 6px 18px rgba(201,168,76,.22)}
@@ -62,9 +64,15 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 /* Box quantity display on card */
 .qty-row{display:flex;align-items:stretch;gap:6px;margin-bottom:0}
 .qty-box{flex:1;background:rgba(0,0,0,.2);border-radius:7px;padding:5px 7px;text-align:center;border:1px solid rgba(255,255,255,.05)}
-.qty-label{font-size:9px;color:var(--muted);display:block;margin-bottom:1px}
+.qty-label{font-size:9px;color:var(--muted);display:block;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qty-val{font-size:14px;font-weight:700;display:block;line-height:1.2}
 .qty-unit{font-size:9px;font-weight:400}
+@media(max-width:480px){
+  .qty-row{gap:4px}
+  .qty-box{padding:4px 2px}
+  .qty-label{font-size:8px}
+  .qty-val{font-size:13px}
+}
 
 /* MODAL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:flex-end;justify-content:center}
@@ -644,7 +652,7 @@ function setupInfiniteScroll(){
   if('IntersectionObserver' in window){
     loadObserver=new IntersectionObserver(entries=>{
       if(entries.some(entry=>entry.isIntersecting)) more();
-    },{root:null,threshold:0.25});
+    },{rootMargin:'400px',threshold:0});
     loadObserver.observe(sentinel);
   } else {
     sentinel.innerHTML='<button class="lmb" onclick="more()">تحميل المزيد</button>';
