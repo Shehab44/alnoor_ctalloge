@@ -425,9 +425,13 @@ function run(){
       const s=[p.name,p.code,p.package_code,p.barcode].join(' ').toLowerCase();
       if(!s.includes(q)) return false;
     }
-    if(curF==='w1') return p.warehouse==='مستودع 1';
-    if(curF==='w2') return p.warehouse==='مستودع 2';
-    if(curF==='w3') return p.warehouse==='مستودع 3';
+    const hasW1 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 1');
+    const hasW2 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 2');
+    const hasW3 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 3');
+
+    if(curF==='w1') return hasW1;
+    if(curF==='w2') return hasW2;
+    if(curF==='w3') return hasW3;
     if(curF==='img') return hasImage(p);
     if(curF==='noimg') return !hasImage(p);
     if(curF==='b10') return p.qty_boxes>=10;
@@ -454,8 +458,15 @@ function render(){
   for(const p of slice){
     const img=getImg(p);
     const hasImg=!!img;
-    const wc=p.warehouse==='مستودع 1'?'w1b':p.warehouse==='مستودع 2'?'w2b':'w3b';
-    const wl=p.warehouse==='مستودع 1'?'م1':p.warehouse==='مستودع 2'?'م2':'م3';
+    
+    const whTags = p.stock ? p.stock.map(s => {
+      const w = s.warehouse_name;
+      const c = w==='مستودع 1'?'w1b':w==='مستودع 2'?'w2b':'w3b';
+      const l = w==='مستودع 1'?'م1':w==='مستودع 2'?'م2':'م3';
+      return `<span class="wb ${c}" style="position:relative;display:inline-block;top:auto;right:auto;margin:2px">${esc(l)}</span>`;
+    }).join('') : '';
+    const whContainer = `<div style="position:absolute;top:4px;right:4px;display:flex;flex-direction:column;align-items:flex-end;">${whTags}</div>`;
+
     const imgHtml=hasImg?`<img class="ci" src="${esc(img)}" loading="lazy" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`:'' ;
     const noImg=`<div class="ni" style="${hasImg?'display:none':''}">📦</div>`;
     const pickerKey=encodeURIComponent(buildItemKey(p));
@@ -465,7 +476,7 @@ function render(){
     const boxes=p.qty_boxes%1===0?p.qty_boxes:p.qty_boxes.toFixed(1);
 
     h+=`<div class="card${hasImg?' hi':''}" data-key="${esc(pickerKey)}">
-      <div class="iw">${imgHtml}${noImg}${addImgBtn}<span class="wb ${wc}">${esc(wl)}</span></div>
+      <div class="iw">${imgHtml}${noImg}${addImgBtn}${whContainer}</div>
       <div class="cb">
         ${p.package_code&&p.package_code!=='-'?`<span class="pkg">${esc(p.package_code)}</span>`:''}
         <div class="cn">${esc(p.name)}</div>
@@ -530,27 +541,38 @@ function opnM(p){
   document.getElementById('mc').textContent=p.package_code||p.code||'—';
   document.getElementById('mn').textContent=p.name;
 
-  const bc=p.qty_boxes>=10?'var(--green)':p.qty_boxes>=1?'var(--yellow)':'var(--red)';
-  const boxes=p.qty_boxes%1===0?p.qty_boxes:p.qty_boxes.toFixed(1);
+  let stockHtml = '';
+  if (p.stock && p.stock.length > 0) {
+    p.stock.forEach(s => {
+      const bc = s.qty_boxes>=10?'var(--green)':s.qty_boxes>=1?'var(--yellow)':'var(--red)';
+      const boxes = s.qty_boxes%1===0?s.qty_boxes:s.qty_boxes.toFixed(1);
+      stockHtml += `
+      <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.1)">
+        <div style="color:var(--gold);font-size:14px;font-weight:700;margin-bottom:6px">${esc(s.warehouse_name)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="mqty-sub" style="border:none;background:rgba(0,0,0,0.2)">
+             <div class="num" style="color:${bc}">${esc(boxes)}</div>
+             <div class="lbl">صندوق</div>
+          </div>
+          <div class="mqty-sub" style="border:none;background:rgba(0,0,0,0.2)">
+             <div class="num">${esc(s.qty_pcs)}</div>
+             <div class="lbl">قطعة</div>
+          </div>
+        </div>
+      </div>
+      `;
+    });
+  } else {
+    stockHtml = '<div style="color:var(--muted);text-align:center;padding:15px;background:rgba(0,0,0,0.2);border-radius:10px;">غير متوفر في أي مستودع حالياً</div>';
+  }
 
-  document.getElementById('mq').innerHTML=`
-    <div class="mqty-main">
-      <div class="big" style="color:${bc}">${esc(boxes)}</div>
-      <div class="unit">صندوق متوفر</div>
-    </div>
-    <div class="mqty-sub">
-      <div class="num">${esc(p.box_fill)}</div>
-      <div class="lbl">تعبئة الصندوق / قطعة</div>
-    </div>
-    <div class="mqty-sub">
-      <div class="num">${esc(p.qty_pcs)}</div>
-      <div class="lbl">إجمالي القطع</div>
-    </div>`;
+  document.getElementById('mq').innerHTML = stockHtml;
+  document.getElementById('mq').style.display = 'block';
 
   document.getElementById('md').innerHTML=`
     <div class="mi2"><div class="ml">رمز الطرد</div><div class="mv">${esc(p.package_code||'—')}</div></div>
     <div class="mi2"><div class="ml">كود المادة</div><div class="mv" style="font-size:12px">${esc(p.code||'—')}</div></div>
-    <div class="mi2"><div class="ml">المستودع</div><div class="mv" style="font-size:13px">${esc(p.warehouse)}</div></div>`;
+    <div class="mi2"><div class="ml">تعبئة الصندوق</div><div class="mv" style="font-size:13px">${esc(p.box_fill)} قطعة</div></div>`;
 
   document.getElementById('ov').classList.add('on');
 }

@@ -9,6 +9,9 @@ const { syncWarehouses } = require('./warehouse-sync');
 const app = express();
 const db = new Database('catalog.sqlite');
 
+// تفعيل foreign keys لضمان الكاسكيد (Cascade Delete)
+db.pragma('foreign_keys = ON');
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
@@ -36,39 +39,54 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// API 1: جلب جميع الأصناف مع صورها
+// API 1: جلب جميع الأصناف مع صورها والمخزون
 app.get('/api/products', (req, res) => {
   try {
-    const products = db.prepare('SELECT * FROM products').all();
+    const products = db.prepare('SELECT * FROM master_products ORDER BY id DESC').all();
     const getImages = db.prepare('SELECT id, image_path FROM product_images WHERE product_id = ?');
+    const getStock = db.prepare('SELECT warehouse_name, qty_pcs, qty_boxes, last_updated FROM warehouse_stock WHERE product_id = ?');
 
     const result = products.map(prod => {
       const imgs = getImages.all(prod.id);
+      const stock = getStock.all(prod.id);
+      
+      // التوافقية المؤقتة للواجهة القديمة (لحين تعديل index.html)
+      // سنقوم بإرجاع الحقول بشكل مجمع ليسهل التعامل معها في الواجهة
       return {
         ...prod,
         images: imgs.map(i => i.image_path),
-        image_ids: imgs.map(i => i.id)
+        image_ids: imgs.map(i => i.id),
+        stock: stock,
+        // إرجاع أول مستودع وكمياته كقيم افتراضية لعدم كسر الواجهة القديمة تماماً
+        warehouse: stock.length > 0 ? stock.map(s => s.warehouse_name).join(', ') : 'بدون مستودع',
+        qty_pcs: stock.reduce((sum, s) => sum + (s.qty_pcs || 0), 0),
+        qty_boxes: stock.reduce((sum, s) => sum + (s.qty_boxes || 0), 0)
       };
     });
 
     res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// API 2: إضافة صنف جديد
+// API 2: إضافة صنف جديد يدوياً
 app.post('/api/products', localOnly, (req, res) => {
   try {
-    const { name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse } = req.body;
+    const { name, code, package_code, barcode, box_fill } = req.body;
     const stmt = db.prepare(`
-      INSERT INTO products (name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO master_products (name, code, package_code, barcode, box_fill)
+      VALUES (?, ?, ?, ?, ?)
     `);
-    const info = stmt.run(name, code, package_code, barcode, qty_pcs || 0, box_fill || 1, qty_boxes || 0, warehouse || 'مستودع 1');
+    const info = stmt.run(name, code, package_code || '', barcode || '', box_fill || 1);
     res.json({ success: true, id: info.lastInsertRowid });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      res.status(400).json({ error: 'رمز المادة ورمز الطرد موجودان مسبقاً.' });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
@@ -90,12 +108,12 @@ app.post('/api/products/:id/upload', localOnly, upload.single('image'), (req, re
 // API 4: تعديل صنف
 app.put('/api/products/:id', localOnly, (req, res) => {
   try {
-    const { name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse } = req.body;
+    const { name, code, package_code, barcode, box_fill } = req.body;
     db.prepare(`
-      UPDATE products
-      SET name=?, code=?, package_code=?, barcode=?, qty_pcs=?, box_fill=?, qty_boxes=?, warehouse=?
+      UPDATE master_products
+      SET name=?, code=?, package_code=?, barcode=?, box_fill=?
       WHERE id=?
-    `).run(name, code, package_code, barcode, qty_pcs || 0, box_fill || 1, qty_boxes || 0, warehouse || '', req.params.id);
+    `).run(name, code, package_code || '', barcode || '', box_fill || 1, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -111,7 +129,9 @@ app.delete('/api/products/:productId/images/:imageId', localOnly, (req, res) => 
     db.prepare('DELETE FROM product_images WHERE id=?').run(req.params.imageId);
 
     const filePath = path.join(__dirname, img.image_path);
-    fs.unlink(filePath, () => {});
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
 
     res.json({ success: true });
   } catch (err) {
@@ -119,10 +139,21 @@ app.delete('/api/products/:productId/images/:imageId', localOnly, (req, res) => 
   }
 });
 
-// API 6: حذف صنف
+// API 6: حذف صنف (سيتم مسح المخزون والصور من قاعدة البيانات تلقائياً عبر CASCADE)
 app.delete('/api/products/:id', localOnly, (req, res) => {
   try {
-    db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+    // جلب مسارات الصور لمسحها من القرص
+    const images = db.prepare('SELECT image_path FROM product_images WHERE product_id = ?').all(req.params.id);
+    
+    db.prepare('DELETE FROM master_products WHERE id = ?').run(req.params.id);
+    
+    for (const img of images) {
+        const filePath = path.join(__dirname, img.image_path);
+        if (fs.existsSync(filePath)) {
+            try { fs.unlinkSync(filePath); } catch (e) { console.error('فشل حذف الصورة', e); }
+        }
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -135,6 +166,7 @@ app.post('/api/sync-warehouses', localOnly, (req, res) => {
     const result = syncWarehouses(db, { rootDir: __dirname });
     res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });

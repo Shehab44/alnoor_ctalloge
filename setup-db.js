@@ -1,39 +1,42 @@
 const Database = require('better-sqlite3');
 const db = new Database('catalog.sqlite');
 
-// إنشاء جدول المنتجات
+// 1. إنشاء جدول الكتالوج الموحد (البيانات الثابتة للمنتج والطرد)
 db.prepare(`
-  CREATE TABLE IF NOT EXISTS products (
+  CREATE TABLE IF NOT EXISTS master_products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
     code TEXT NOT NULL,
-    package_code TEXT,
+    package_code TEXT DEFAULT '',
+    name TEXT NOT NULL,
     barcode TEXT,
-    qty_pcs INTEGER DEFAULT 0,
     box_fill INTEGER DEFAULT 1,
-    qty_boxes REAL DEFAULT 0,
-    warehouse TEXT
+    CONSTRAINT uq_product UNIQUE (code, package_code)
   )
 `).run();
 
-// إنشاء جدول الصور المرتبطة بـ ID المنتج
+// 2. إنشاء جدول الصور (منفصل تماماً عن حركة المخزون)
 db.prepare(`
   CREATE TABLE IF NOT EXISTS product_images (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
     image_path TEXT NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    is_primary BOOLEAN DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES master_products(id) ON DELETE CASCADE
   )
 `).run();
 
-// إنشاء جدول الإشعارات
+// 3. إنشاء جدول حركة مخزون المستودعات (Warehouse Stock)
 db.prepare(`
-  CREATE TABLE IF NOT EXISTS notifications (
+  CREATE TABLE IF NOT EXISTS warehouse_stock (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    message TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    product_id INTEGER NOT NULL,
+    warehouse_name TEXT NOT NULL,
+    qty_pcs INTEGER DEFAULT 0,
+    qty_boxes REAL DEFAULT 0,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES master_products(id) ON DELETE CASCADE,
+    CONSTRAINT uq_warehouse_stock UNIQUE (product_id, warehouse_name)
   )
 `).run();
 
-console.log('✅ تم إنشاء قاعدة البيانات catalog.sqlite والجدولين بنجاح!');
+console.log('✅ تم إنشاء وتهيئة قاعدة البيانات catalog.sqlite والهيكلة الجديدة بنجاح!');

@@ -54,9 +54,9 @@ function normalizeWarehouseRow(row, warehouseName) {
   const packageCode = String(row?.[10] ?? '');
   const name = String(row?.[4] ?? '');
 
-  // صف صريح بكمية صفر أو سالبة = إشارة حذف (مش تجاهل) — يُعالج لحاله بالحلقة الرئيسية
+  // صف صريح بكمية صفر أو سالبة
   if (qtyBoxes <= 0 || qtyPcs <= 0) {
-    return { skipped: false, isZero: true, code, warehouse: warehouseName };
+    return { skipped: false, isZero: true, code, package_code: packageCode, warehouse: warehouseName };
   }
 
   return {
@@ -99,6 +99,30 @@ function syncWarehouses(db, options = {}) {
   };
 
   const transaction = db.transaction(() => {
+    
+    // Statements for UPSERT
+    const insertMasterStmt = db.prepare(`
+      INSERT INTO master_products (code, package_code, name, barcode, box_fill)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(code, package_code) DO UPDATE SET
+        name = excluded.name,
+        barcode = excluded.barcode,
+        box_fill = excluded.box_fill
+      RETURNING id
+    `);
+
+    const insertStockStmt = db.prepare(`
+      INSERT INTO warehouse_stock (product_id, warehouse_name, qty_pcs, qty_boxes, last_updated)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(product_id, warehouse_name) DO UPDATE SET
+        qty_pcs = excluded.qty_pcs,
+        qty_boxes = excluded.qty_boxes,
+        last_updated = CURRENT_TIMESTAMP
+    `);
+
+    const getMasterStmt = db.prepare(`SELECT id FROM master_products WHERE code = ? AND package_code = ?`);
+    const deleteStockStmt = db.prepare(`DELETE FROM warehouse_stock WHERE product_id = ? AND warehouse_name = ?`);
+
     for (const warehouse of WAREHOUSE_FILES) {
       const filePath = buildWarehousePath(rootDir, warehouse.baseName);
       if (!fs.existsSync(filePath)) {
@@ -114,26 +138,6 @@ function syncWarehouses(db, options = {}) {
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 1 });
       const perWarehouseSummary = { updated: 0, added: 0, deleted: 0, skippedRows: 0 };
 
-      // دالة تحذف صنف صريح الصفر (إذا كان موجود أصلاً) — بدون أي مقارنة مع باقي أصناف المستودع
-      function deleteIfExists(code, warehouseName) {
-        const existing = db.prepare('SELECT id, name, code, warehouse FROM products WHERE code = ? AND warehouse = ?').get(code, warehouseName);
-        if (!existing) return false;
-        const images = db.prepare('SELECT image_path FROM product_images WHERE product_id = ?').all(existing.id);
-        for (const image of images) {
-          const imagePath = path.join(rootDir, image.image_path);
-          try { fs.unlinkSync(imagePath); } catch (err) {
-            if (err && err.code !== 'ENOENT') throw err;
-          }
-        }
-        db.prepare('DELETE FROM products WHERE id = ?').run(existing.id);
-        summary.details.deleted.push({
-          name: existing.name,
-          code: existing.code,
-          warehouse: existing.warehouse
-        });
-        return true;
-      }
-
       for (const row of rows) {
         if (!Array.isArray(row)) continue;
         const normalized = normalizeWarehouseRow(row, warehouse.name);
@@ -143,44 +147,47 @@ function syncWarehouses(db, options = {}) {
           continue;
         }
 
-        // صف بكمية صفر/سالبة صراحة → احذف الصنف المطابق إذا كان موجود، وبس. لا يُضاف أبداً.
         if (normalized.isZero) {
-          if (deleteIfExists(normalized.code, warehouse.name)) {
-            perWarehouseSummary.deleted += 1;
-            summary.total.deleted += 1;
+          // حذف المخزون فقط من المستودع (ولا نحذف المنتج الأساسي أو صوره أبداً)
+          const master = getMasterStmt.get(normalized.code, normalized.package_code);
+          if (master) {
+            const info = deleteStockStmt.run(master.id, warehouse.name);
+            if (info.changes > 0) {
+              perWarehouseSummary.deleted += 1;
+              summary.total.deleted += 1;
+              summary.details.deleted.push({ code: normalized.code, warehouse: warehouse.name });
+            }
           }
           continue;
         }
 
-        const existing = db.prepare('SELECT id FROM products WHERE code = ? AND warehouse = ?').get(normalized.code, warehouse.name);
+        // إدراج أو تحديث الصنف الأساسي
+        const masterInfo = insertMasterStmt.get(
+          normalized.code, 
+          normalized.package_code, 
+          normalized.name, 
+          normalized.barcode, 
+          normalized.box_fill
+        );
+        
+        const productId = masterInfo.id;
 
-        if (existing) {
-          db.prepare(`
-            UPDATE products
-            SET name = ?, package_code = ?, barcode = ?, qty_pcs = ?, box_fill = ?, qty_boxes = ?
-            WHERE id = ?
-          `).run(normalized.name, normalized.package_code, normalized.barcode, normalized.qty_pcs, normalized.box_fill, normalized.qty_boxes, existing.id);
+        // إدراج أو تحديث مخزون المستودع
+        const stockInfo = insertStockStmt.run(
+          productId,
+          warehouse.name,
+          normalized.qty_pcs,
+          normalized.qty_boxes
+        );
+
+        if (stockInfo.changes > 0) {
           perWarehouseSummary.updated += 1;
           summary.total.updated += 1;
-        } else {
-          db.prepare(`
-            INSERT INTO products (name, code, package_code, barcode, qty_pcs, box_fill, qty_boxes, warehouse)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(normalized.name, normalized.code, normalized.package_code, normalized.barcode, normalized.qty_pcs, normalized.box_fill, normalized.qty_boxes, warehouse.name);
-          perWarehouseSummary.added += 1;
-          summary.total.added += 1;
-          summary.details.added.push({
-            name: normalized.name,
-            code: normalized.code,
-            warehouse: normalized.warehouse
-          });
         }
       }
 
-      // ملاحظة مهمة: لا يوجد هون أي حذف بسبب الغياب عن الملف — الحذف فقط للأصناف الصفرية الصريحة فوق.
       summary.perWarehouse[warehouse.name] = perWarehouseSummary;
     }
-
   });
 
   transaction();
