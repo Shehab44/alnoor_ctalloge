@@ -149,6 +149,40 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .dropzone .dztxt b{color:var(--gold)}
 .dropzone img.dzpreview{max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto}
 .f_preview{max-width:100%;max-height:150px;border-radius:8px;display:none;margin-top:8px}
+
+/* ===== added: Toasts & Sync Report Modal ===== */
+#toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+.toast{background:rgba(15,23,42,0.95);border-right:4px solid var(--gold);color:var(--text);padding:14px 20px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:flex;align-items:center;gap:12px;min-width:280px;transform:translateX(120%);opacity:0;transition:all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);backdrop-filter:blur(10px)}
+.toast.show{transform:translateX(0);opacity:1}
+.toast.success{border-color:var(--green)}
+.toast.success .t-icon{color:var(--green)}
+.toast.error{border-color:var(--red)}
+.toast.error .t-icon{color:var(--red)}
+.toast.info{border-color:var(--blue)}
+.toast.info .t-icon{color:var(--blue)}
+.t-icon{font-size:20px}
+.t-content{display:flex;flex-direction:column;gap:2px}
+.t-title{font-size:14px;font-weight:700}
+.t-msg{font-size:12px;color:var(--muted)}
+
+.report-modal{background:#1e293b;border:1px solid var(--gold);border-radius:16px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:24px;margin:8vh auto;animation:up .28s ease}
+.r-header{text-align:center;margin-bottom:20px}
+.r-title{font-size:20px;font-weight:700;color:var(--gold)}
+.r-subtitle{font-size:13px;color:var(--muted)}
+.r-stats{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:24px}
+.r-stat{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;text-align:center}
+.r-stat.added .r-num{color:var(--green)}
+.r-stat.updated .r-num{color:var(--blue)}
+.r-stat.deleted .r-num{color:var(--red)}
+.r-num{font-size:28px;font-weight:900;margin-bottom:4px}
+.r-label{font-size:12px;color:var(--muted)}
+.r-section{margin-bottom:20px}
+.r-section h4{color:var(--gold);font-size:14px;margin-bottom:10px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:6px}
+.r-list{max-height:180px;overflow-y:auto;background:rgba(0,0,0,0.2);border-radius:8px;padding:8px}
+.r-item{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px}
+.r-item:last-child{border-bottom:none}
+.r-item .c-name{font-weight:700}
+.r-item .c-wh{color:var(--muted);font-size:11px}
 </style>
 </head>
 <body>
@@ -261,6 +295,33 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
   </div>
 </div>
 
+<div id="toast-container"></div>
+
+<div class="overlay" id="ovReport">
+  <div class="report-modal">
+    <div class="r-header">
+      <div class="r-title">تقرير المزامنة</div>
+      <div class="r-subtitle">تمت معالجة المستودعات بنجاح</div>
+    </div>
+    <div class="r-stats">
+      <div class="r-stat added"><div class="r-num" id="r-added">0</div><div class="r-label">أصناف جديدة</div></div>
+      <div class="r-stat updated"><div class="r-num" id="r-updated">0</div><div class="r-label">تم تحديثها</div></div>
+      <div class="r-stat deleted"><div class="r-num" id="r-deleted">0</div><div class="r-label">تم شطبها (مخزون 0)</div></div>
+    </div>
+    <div class="r-section" id="r-added-section" style="display:none">
+      <h4>الأصناف المضافة حديثاً</h4>
+      <div class="r-list" id="r-added-list"></div>
+    </div>
+    <div class="r-section" id="r-deleted-section" style="display:none">
+      <h4>الأصناف التي تم شطبها</h4>
+      <div class="r-list" id="r-deleted-list"></div>
+    </div>
+    <div class="fbtns">
+      <button class="fbtn save" onclick="document.getElementById('ovReport').classList.remove('on')">حسناً، إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ملاحظة أمنية: هذا الملف يعمل كـ HTML محلي بدون auth أو صلاحيات منفصلة.
 // أي شخص يفتح الملف في المتصفح لديه صلاحية كاملة للتعديل/الحذف/التصدير/إضافة أصناف.
@@ -276,6 +337,69 @@ let filtered=[], curF='all', curQ='', sortByBoxes=false, page=0;
 const PAGE=50;
 let curCode=null;
 let curItemKey=null;
+
+function showToast(title, message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  let icon = 'ℹ️';
+  if (type === 'success') icon = '✅';
+  if (type === 'error') icon = '❌';
+
+  toast.innerHTML = `
+    <div class="t-icon">${icon}</div>
+    <div class="t-content">
+      <div class="t-title">${esc(title)}</div>
+      <div class="t-msg">${esc(message)}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  
+  // Animate in
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  // Remove after 4s
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
+function showSyncReport(summary) {
+  document.getElementById('r-added').textContent = summary.total.added;
+  document.getElementById('r-updated').textContent = summary.total.updated;
+  document.getElementById('r-deleted').textContent = summary.total.deleted;
+
+  const addedList = document.getElementById('r-added-list');
+  const deletedList = document.getElementById('r-deleted-list');
+  
+  if (summary.details.added && summary.details.added.length > 0) {
+    addedList.innerHTML = summary.details.added.map(a => `
+      <div class="r-item">
+        <div><span class="c-name">${esc(a.name || 'بدون اسم')}</span> <span class="c-wh">(${esc(a.code)})</span></div>
+        <div class="c-wh">${esc(a.warehouse)} - ${esc(a.qty_boxes)} صندوق</div>
+      </div>
+    `).join('');
+    document.getElementById('r-added-section').style.display = 'block';
+  } else {
+    document.getElementById('r-added-section').style.display = 'none';
+  }
+
+  if (summary.details.deleted && summary.details.deleted.length > 0) {
+    deletedList.innerHTML = summary.details.deleted.map(d => `
+      <div class="r-item">
+        <div><span class="c-name">${esc(d.name || 'بدون اسم')}</span> <span class="c-wh">(${esc(d.code)})</span></div>
+        <div class="c-wh" style="color:var(--red)">شطب من ${esc(d.warehouse)}</div>
+      </div>
+    `).join('');
+    document.getElementById('r-deleted-section').style.display = 'block';
+  } else {
+    document.getElementById('r-deleted-section').style.display = 'none';
+  }
+
+  document.getElementById('ovReport').classList.add('on');
+}
 
 async function loadProductsFromDB(){
   try{
@@ -644,7 +768,7 @@ async function applyPickedImage(blob){
     closeImgModal();
   }catch(err){
     console.error('فشل رفع الصورة', err);
-    alert(err.message || 'فشل رفع الصورة');
+    showToast('خطأ', err.message || 'فشل رفع الصورة', 'error');
   }
 }
 document.getElementById('cardImgInput').addEventListener('change', function(e){
@@ -760,7 +884,7 @@ function clsForm(){document.getElementById('ov2').classList.remove('on');}
 async function saveForm(){
   const name=document.getElementById('f_name').value.trim();
   const code=document.getElementById('f_code').value.trim();
-  if(!name||!code){ alert('الاسم والكود مطلوبان'); return; }
+  if(!name||!code){ showToast('تنبيه', 'الاسم والكود مطلوبان', 'error'); return; }
   const qtyPcs=parseFloat(document.getElementById('f_qtypcs').value)||0;
   const boxFill=parseFloat(document.getElementById('f_boxfill').value)||1;
   const qtyBoxesInput=document.getElementById('f_qtyboxes').value;
@@ -778,7 +902,7 @@ async function saveForm(){
   };
 
   const duplicateNote=validateProductDuplication(payload);
-  if(duplicateNote) alert(duplicateNote);
+  if(duplicateNote) showToast('تنبيه', duplicateNote, 'info');
 
   const existingProduct=findByKey(curItemKey) || findByCode(code);
   try{
@@ -799,10 +923,13 @@ async function saveForm(){
     if(refreshed){
       curCode=refreshed.code;
       curItemKey=buildItemKey(refreshed);
+      if(document.getElementById('ov').classList.contains('on')){
+        opnM(refreshed);
+      }
     }
+    showToast('نجاح', 'تم الحفظ بنجاح', 'success');
   }catch(err){
-    console.error('فشل حفظ الصنف', err);
-    alert(err.message || 'فشل حفظ الصنف');
+    showToast('خطأ', err.message || 'فشل حفظ الصنف', 'error');
   }
 }
 
@@ -819,8 +946,11 @@ function exportUpdated(){
   }
   const countInData = DATA.length;
   const countInExport = (updated.match(/"code"\s*:/g)||[]).length;
-  if(countInExport < countInData){
-    alert('تحذير: لم يتم حفظ جميع البيانات بشكل صحيح أثناء التصدير، يرجى إعادة المحاولة.');
+  let valid=countInExport >= countInData;
+  if(!valid) {
+    showToast('تحذير', 'تحذير: لم يتم حفظ جميع البيانات بشكل صحيح أثناء التصدير، يرجى إعادة المحاولة.', 'error');
+  } else {
+    showToast('نجاح', 'تم تصدير الكتالوج', 'success');
   }
   const blob=new Blob([updated],{type:'text/html;charset=utf-8'});
   const a=document.createElement('a');
@@ -851,14 +981,20 @@ function toggleMenu(button){
 
 async function syncWarehousesBtn(){
   try{
+    showToast('جاري المزامنة', 'جاري جلب ومطابقة البيانات...', 'info');
     const response=await fetch('/api/sync-warehouses', {method:'POST'});
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error || 'فشل المزامنة');
     await loadProductsFromDB();
-    alert('تمت المزامنة بنجاح');
+    if(result.summary) {
+      showSyncReport(result.summary);
+      showToast('اكتملت المزامنة', 'تم تحديث البيانات بنجاح', 'success');
+    } else {
+      showToast('اكتملت المزامنة', 'تم تحديث البيانات بنجاح', 'success');
+    }
   }catch(err){
     console.error('فشل مزامنة المستودعات', err);
-    alert(err.message || 'فشل المزامنة');
+    showToast('خطأ في المزامنة', err.message || 'فشل المزامنة', 'error');
   }
 }
 
@@ -957,13 +1093,13 @@ async function migrateLegacyImageUrls(){
 
 async function selectImagesFolder(){
   if(!('showDirectoryPicker' in window)){
-    alert('هاد المتصفح ما بيدعم ربط المجلدات مباشرة (بتشتغل هاي الميزة على Chrome/Edge بس). الصور رح تنحفظ داخل ملف الكتالوج كالمعتاد.');
+    showToast('غير مدعوم', 'هاد المتصفح ما بيدعم ربط المجلدات مباشرة (بتشتغل هاي الميزة على Chrome/Edge بس). الصور رح تنحفظ داخل ملف الكتالوج كالمعتاد.', 'info');
     return;
   }
   try{
     const handle=await window.showDirectoryPicker();
     const granted=await handle.requestPermission({mode:'readwrite'});
-    if(granted!=='granted'){ alert('لازم توافق على صلاحية الكتابة حتى تنحفظ الصور بالمجلد.'); return; }
+    if(granted!=='granted'){ showToast('تنبيه', 'لازم توافق على صلاحية الكتابة حتى تنحفظ الصور بالمجلد.', 'error'); return; }
     imagesDirectoryHandle=handle;
     await refreshFolderImageIndex();
     await saveHandleToDB(handle);
@@ -1010,7 +1146,7 @@ async function saveImageToFolder(stem, blob, skipConfirm){
    وكمان IMAGES القديمة المشتركة برمز الطرد) لملفات منفصلة باسم كود الصنف.
    بعدها IMAGES القديمة بتنفضّى تماماً وحجم الكتالوج بينزل بشكل كبير عند التصدير. */
 async function migrateAllImagesToFiles(){
-  if(!imagesDirectoryHandle){ alert('اربط مجلد الصور أولاً من زر 📁.'); return; }
+  if(!imagesDirectoryHandle){ showToast('تنبيه', 'اربط مجلد الصور أولاً من زر 📁.', 'error'); return; }
   if(!confirm('رح ينقل كل الصور المضمّنة حالياً بالكتالوج لملفات منفصلة بمجلد images، وبيخفف حجم الكتالوج بشكل كبير عند التصدير. متابعة؟')) return;
 
   let migrated=0, failed=0;
@@ -1034,7 +1170,7 @@ async function migrateAllImagesToFiles(){
   for(const k in IMAGES) delete IMAGES[k]; // تفريغ الصور المشتركة القديمة بعد ما انسخت لملفات فردية
 
   run();
-  alert(`تم نقل ${migrated} صورة لملفات منفصلة${failed?(' (فشل نقل '+failed+')'):''}. اضغط 💾 تصدير لحفظ نسخة الكتالوج الجديدة الخفيفة.`);
+  showToast('تمت الهجرة', `تم نقل ${migrated} صورة لملفات منفصلة${failed?(' (فشل نقل '+failed+')'):''}. اضغط 💾 تصدير لحفظ نسخة الكتالوج الجديدة الخفيفة.`, 'success');
 }
 
 async function initializeImages(){
@@ -1053,7 +1189,7 @@ async function deleteCurrentImage(){
   if(!p){ return; }
   const imageIds=Array.isArray(p.image_ids)?p.image_ids:[];
   const firstImageId=imageIds[0];
-  if(!firstImageId){ alert('لا توجد صورة لهاد الصنف أساساً.'); return; }
+  if(!firstImageId){ showToast('تنبيه', 'لا توجد صورة لهاد الصنف أساساً.', 'error'); return; }
   if(!confirm(`متأكد إنك بدك تحذف صورة الصنف "${p.name}"؟`)) return;
 
   try{
@@ -1067,7 +1203,7 @@ async function deleteCurrentImage(){
     }
   }catch(err){
     console.error('فشل حذف الصورة', err);
-    alert(err.message || 'فشل حذف الصورة');
+    showToast('خطأ', err.message || 'فشل حذف الصورة', 'error');
   }
 }
 </script>

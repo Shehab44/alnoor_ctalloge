@@ -123,6 +123,8 @@ function syncWarehouses(db, options = {}) {
     const getMasterStmt = db.prepare(`SELECT id FROM master_products WHERE code = ? AND package_code = ?`);
     const deleteStockStmt = db.prepare(`DELETE FROM warehouse_stock WHERE product_id = ? AND warehouse_name = ?`);
 
+    const checkStockStmt = db.prepare(`SELECT 1 FROM warehouse_stock WHERE product_id = ? AND warehouse_name = ?`);
+
     for (const warehouse of WAREHOUSE_FILES) {
       const filePath = buildWarehousePath(rootDir, warehouse.baseName);
       if (!fs.existsSync(filePath)) {
@@ -147,18 +149,26 @@ function syncWarehouses(db, options = {}) {
           continue;
         }
 
+        const master = getMasterStmt.get(normalized.code, normalized.package_code);
+
         if (normalized.isZero) {
           // حذف المخزون فقط من المستودع (ولا نحذف المنتج الأساسي أو صوره أبداً)
-          const master = getMasterStmt.get(normalized.code, normalized.package_code);
           if (master) {
             const info = deleteStockStmt.run(master.id, warehouse.name);
             if (info.changes > 0) {
               perWarehouseSummary.deleted += 1;
               summary.total.deleted += 1;
-              summary.details.deleted.push({ code: normalized.code, warehouse: warehouse.name });
+              // نجلب اسم المادة ليكون التقرير واضح
+              const mName = db.prepare('SELECT name FROM master_products WHERE id=?').get(master.id)?.name || normalized.name;
+              summary.details.deleted.push({ code: normalized.code, name: mName, warehouse: warehouse.name });
             }
           }
           continue;
+        }
+
+        let stockExists = false;
+        if (master) {
+           stockExists = !!checkStockStmt.get(master.id, warehouse.name);
         }
 
         // إدراج أو تحديث الصنف الأساسي
@@ -173,14 +183,23 @@ function syncWarehouses(db, options = {}) {
         const productId = masterInfo.id;
 
         // إدراج أو تحديث مخزون المستودع
-        const stockInfo = insertStockStmt.run(
+        insertStockStmt.run(
           productId,
           warehouse.name,
           normalized.qty_pcs,
           normalized.qty_boxes
         );
 
-        if (stockInfo.changes > 0) {
+        if (!stockExists) {
+          perWarehouseSummary.added += 1;
+          summary.total.added += 1;
+          summary.details.added.push({
+            code: normalized.code,
+            name: normalized.name,
+            warehouse: warehouse.name,
+            qty_boxes: normalized.qty_boxes
+          });
+        } else {
           perWarehouseSummary.updated += 1;
           summary.total.updated += 1;
         }

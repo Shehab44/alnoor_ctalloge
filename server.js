@@ -42,7 +42,12 @@ const upload = multer({ storage });
 // API 1: جلب جميع الأصناف مع صورها والمخزون
 app.get('/api/products', (req, res) => {
   try {
-    const products = db.prepare('SELECT * FROM master_products ORDER BY id DESC').all();
+    const products = db.prepare(`
+      SELECT m.*, 
+             (SELECT COUNT(*) FROM product_images WHERE product_id = m.id) as img_count
+      FROM master_products m 
+      ORDER BY img_count DESC, id DESC
+    `).all();
     const getImages = db.prepare('SELECT id, image_path FROM product_images WHERE product_id = ?');
     const getStock = db.prepare('SELECT warehouse_name, qty_pcs, qty_boxes, last_updated FROM warehouse_stock WHERE product_id = ?');
 
