@@ -139,6 +139,9 @@ function syncWarehouses(db, options = {}) {
       const sheet = workbook.Sheets['القائمة الرئيسية'];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 1 });
       const perWarehouseSummary = { updated: 0, added: 0, deleted: 0, skippedRows: 0 };
+      const existingStock = db.prepare('SELECT product_id FROM warehouse_stock WHERE warehouse_name = ?').all(warehouse.name);
+      const existingStockSet = new Set(existingStock.map(r => r.product_id));
+      const seenStockSet = new Set();
 
       for (const row of rows) {
         if (!Array.isArray(row)) continue;
@@ -158,10 +161,10 @@ function syncWarehouses(db, options = {}) {
             if (info.changes > 0) {
               perWarehouseSummary.deleted += 1;
               summary.total.deleted += 1;
-              // نجلب اسم المادة ليكون التقرير واضح
               const mName = db.prepare('SELECT name FROM master_products WHERE id=?').get(master.id)?.name || normalized.name;
               summary.details.deleted.push({ code: normalized.code, name: mName, warehouse: warehouse.name });
             }
+            seenStockSet.add(master.id);
           }
           continue;
         }
@@ -181,6 +184,7 @@ function syncWarehouses(db, options = {}) {
         );
         
         const productId = masterInfo.id;
+        seenStockSet.add(productId);
 
         // إدراج أو تحديث مخزون المستودع
         insertStockStmt.run(
@@ -205,8 +209,31 @@ function syncWarehouses(db, options = {}) {
         }
       }
 
+      // 🧹 التحقق من الأصناف المحذوفة كلياً من الإكسيل
+      for (const pid of existingStockSet) {
+        if (!seenStockSet.has(pid)) {
+          const info = deleteStockStmt.run(pid, warehouse.name);
+          if (info.changes > 0) {
+            perWarehouseSummary.deleted += 1;
+            summary.total.deleted += 1;
+            const mData = db.prepare('SELECT name, code FROM master_products WHERE id=?').get(pid);
+            if (mData) {
+              summary.details.deleted.push({ code: mData.code, name: mData.name, warehouse: warehouse.name });
+            }
+          }
+        }
+      }
+
       summary.perWarehouse[warehouse.name] = perWarehouseSummary;
     }
+    
+    // تنظيف تلقائي بعد المزامنة: حذف الأصناف (الأشباح) التي أصبح مخزونها صفراً في جميع المستودعات وليس لها صور
+    db.prepare(`
+      DELETE FROM master_products 
+      WHERE id NOT IN (SELECT product_id FROM warehouse_stock) 
+        AND id NOT IN (SELECT product_id FROM product_images)
+    `).run();
+
   });
 
   transaction();
