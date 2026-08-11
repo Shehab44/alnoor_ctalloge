@@ -16,11 +16,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-function localOnly(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress || '';
-  const isLocal = ip === '127.0.0.1' || ip === '::1' || ip.includes('::ffff:127.0.0.1');
-  if (!isLocal) {
-    return res.status(403).json({ error: 'التعديل مسموح فقط من الجهاز المحلي' });
+function adminOnly(req, res, next) {
+  const providedKey = req.headers['x-admin-key'];
+  const correctKey = process.env.ADMIN_PASSWORD || '81473454';
+  if (providedKey !== correctKey) {
+    return res.status(403).json({ error: 'غير مصرح لك بإجراء هذه العملية' });
   }
   next();
 }
@@ -77,7 +77,7 @@ app.get('/api/products', (req, res) => {
 });
 
 // API 2: إضافة صنف جديد يدوياً
-app.post('/api/products', localOnly, (req, res) => {
+app.post('/api/products', adminOnly, (req, res) => {
   try {
     const { name, code, package_code, barcode, box_fill } = req.body;
     const stmt = db.prepare(`
@@ -96,7 +96,7 @@ app.post('/api/products', localOnly, (req, res) => {
 });
 
 // API 3: رفع صورة جديدة لصنف بـ ID
-app.post('/api/products/:id/upload', localOnly, upload.single('image'), (req, res) => {
+app.post('/api/products/:id/upload', adminOnly, upload.single('image'), (req, res) => {
   try {
     const productId = req.params.id;
     if (!req.file) return res.status(400).json({ error: 'لم يتم اختيار صورة' });
@@ -111,7 +111,7 @@ app.post('/api/products/:id/upload', localOnly, upload.single('image'), (req, re
 });
 
 // API 4: تعديل صنف
-app.put('/api/products/:id', localOnly, (req, res) => {
+app.put('/api/products/:id', adminOnly, (req, res) => {
   try {
     const { name, code, package_code, barcode, box_fill } = req.body;
     db.prepare(`
@@ -126,7 +126,7 @@ app.put('/api/products/:id', localOnly, (req, res) => {
 });
 
 // API 5: حذف صورة واحدة
-app.delete('/api/products/:productId/images/:imageId', localOnly, (req, res) => {
+app.delete('/api/products/:productId/images/:imageId', adminOnly, (req, res) => {
   try {
     const img = db.prepare('SELECT * FROM product_images WHERE id=? AND product_id=?').get(req.params.imageId, req.params.productId);
     if (!img) return res.status(404).json({ error: 'الصورة غير موجودة' });
@@ -145,7 +145,7 @@ app.delete('/api/products/:productId/images/:imageId', localOnly, (req, res) => 
 });
 
 // API 6: حذف صنف (سيتم مسح المخزون والصور من قاعدة البيانات تلقائياً عبر CASCADE)
-app.delete('/api/products/:id', localOnly, (req, res) => {
+app.delete('/api/products/:id', adminOnly, (req, res) => {
   try {
     // جلب مسارات الصور لمسحها من القرص
     const images = db.prepare('SELECT image_path FROM product_images WHERE product_id = ?').all(req.params.id);
@@ -166,7 +166,7 @@ app.delete('/api/products/:id', localOnly, (req, res) => {
 });
 
 // API 7: مزامنة المستودعات من ملفات XLSX
-app.post('/api/sync-warehouses', localOnly, (req, res) => {
+app.post('/api/sync-warehouses', adminOnly, (req, res) => {
   try {
     const result = syncWarehouses(db, { rootDir: __dirname });
     res.json(result);

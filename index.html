@@ -45,6 +45,21 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
 @media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr)}}
+
+/* Admin Protection */
+body:not(.is-admin) .admin-only { display: none !important; }
+
+/* Mobile Header compaction */
+@media(max-width:480px){
+  .header{padding:6px 12px;gap:6px}
+  .h-top{gap:8px}
+  .logo{font-size:13px}
+  .logo strong{font-size:18px}
+  .logo span{display:none}
+  .si-wrapper{padding:4px 12px;margin-top:2px}
+  .si{font-size:12px;padding:4px 0}
+  .rbar{padding:5px 12px;font-size:10px}
+}
 @media(min-width:1200px){.grid{grid-template-columns:repeat(5,1fr)}}
 
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
@@ -210,8 +225,8 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 
 <div class="header">
   <div class="h-top">
-    <div class="logo">AF <em>/ كتالوج المستودعات</em></div>
-    <div class="pills">
+    <div class="logo" onclick="handleLogoClick()"><strong>AF</strong> <span>/ كتالوج المستودعات</span></div>
+    <div class="stats" id="stats">
       <span class="pill p1" id="s1">م1: —</span>
       <span class="pill p2" id="s2">م2: —</span>
       <span class="pill p3" id="s3">م3: —</span>
@@ -237,7 +252,7 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
   <button class="fb" onclick="setF('m',this)">M-</button>
   <button class="fb" onclick="setF('r',this)">R-</button>
   <button class="fb" onclick="setF('x',this)">X-</button>
-  <div style="position:relative; margin-right:auto;">
+  <div style="position:relative; margin-right:auto;" class="admin-only-inline admin-only">
     <button class="fb" id="filterMenuBtn" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
     <div class="menu" id="topMenu">
       <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
@@ -254,8 +269,8 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 
 <div class="overlay" id="ov" onclick="clsM(event)">
   <div class="modal">
-    <button class="medit" onclick="event.stopPropagation();openEditForm()">✏️ تعديل</button>
-    <button class="medit" id="delImgBtn" style="background:rgba(239,68,68,.15);border-color:var(--red);color:var(--red);display:none" onclick="event.stopPropagation();deleteCurrentImage()">🗑️ حذف الصورة</button>
+    <button class="medit admin-only" onclick="event.stopPropagation();openEditForm()">✏️ تعديل</button>
+    <button class="medit admin-only" id="delImgBtn" style="background:rgba(239,68,68,.15);border-color:var(--red);color:var(--red);display:none" onclick="event.stopPropagation();deleteCurrentImage()">🗑️ حذف الصورة</button>
     <button class="mcl" onclick="clsM()">✕</button>
     <img class="mimg" id="mi" src="" alt="">
     <div class="mcode" id="mc"></div>
@@ -610,7 +625,7 @@ function render(){
     const imgHtml=hasImg?`<img class="ci" src="${esc(img)}" loading="lazy" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`:'' ;
     const noImg=`<div class="ni" style="${hasImg?'display:none':''}">📦</div>`;
     const pickerKey=encodeURIComponent(buildItemKey(p));
-    const addImgBtn=hasImg?'':`<button class="addimg-btn" onclick="event.stopPropagation();openImgPicker('${esc(pickerKey)}')">📷 إضافة صورة</button>`;
+    const addImgBtn=hasImg?'':`<button class="addimg-btn admin-only" onclick="event.stopPropagation();openImgPicker('${esc(pickerKey)}')">📷 إضافة صورة</button>`;
 
     const bc=p.qty_boxes>=10?'var(--green)':p.qty_boxes>=1?'var(--yellow)':'var(--red)';
     const boxes=p.qty_boxes%1===0?p.qty_boxes:p.qty_boxes.toFixed(1);
@@ -825,7 +840,11 @@ async function uploadImageToServer(productId, blob){
   const ext=(blob.type.split('/')[1]||'jpg').toLowerCase();
   const safeExt=ext==='jpeg'?'jpg':ext;
   formData.append('image', blob, `image_${Date.now()}.${safeExt}`);
-  const response=await fetch(`/api/products/${productId}/upload`, {method:'POST', body:formData});
+  const response=await fetch(`/api/products/${productId}/upload`, {
+    method:'POST',
+    headers: {'x-admin-key': adminToken},
+    body:formData
+  });
   const result=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(result.error || 'فشل رفع الصورة');
   return result;
@@ -834,7 +853,7 @@ async function uploadImageToServer(productId, blob){
 async function saveProductToServer(payload, method='POST', productId=null){
   const response=await fetch(productId ? `/api/products/${productId}` : '/api/products', {
     method,
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json', 'x-admin-key': adminToken},
     body:JSON.stringify(payload)
   });
   const result=await response.json().catch(()=>({}));
@@ -998,7 +1017,10 @@ function toggleMenu(button){
 async function syncWarehousesBtn(){
   try{
     showToast('جاري المزامنة', 'جاري جلب ومطابقة البيانات...', 'info');
-    const response=await fetch('/api/sync-warehouses', {method:'POST'});
+    const response=await fetch('/api/sync-warehouses', {
+      method:'POST',
+      headers: {'x-admin-key': adminToken}
+    });
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error || 'فشل المزامنة');
     await loadProductsFromDB();
@@ -1213,7 +1235,10 @@ async function deleteCurrentImage(){
   if(!confirm(`متأكد إنك بدك تحذف صورة الصنف "${p.name}"؟`)) return;
 
   try{
-    const response=await fetch(`/api/products/${p.id}/images/${firstImageId}`, {method:'DELETE'});
+    const response=await fetch(`/api/products/${p.id}/images/${firstImageId}`, {
+      method:'DELETE',
+      headers: {'x-admin-key': adminToken}
+    });
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error || 'فشل حذف الصورة');
     await loadProductsFromDB();
