@@ -227,11 +227,10 @@ function syncWarehouses(db, options = {}) {
       summary.perWarehouse[warehouse.name] = perWarehouseSummary;
     }
     
-    // تنظيف تلقائي بعد المزامنة: حذف الأصناف (الأشباح) التي أصبح مخزونها صفراً في جميع المستودعات وليس لها صور
+    // تنظيف تلقائي بعد المزامنة: حذف الأصناف التي أصبح مخزونها صفراً في جميع المستودعات مهما كان السبب
     db.prepare(`
       DELETE FROM master_products 
-      WHERE id NOT IN (SELECT product_id FROM warehouse_stock) 
-        AND id NOT IN (SELECT product_id FROM product_images)
+      WHERE id NOT IN (SELECT product_id FROM warehouse_stock)
     `).run();
 
   });
