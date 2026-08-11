@@ -101,55 +101,10 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
 .addimg-btn:hover{background:rgba(0,0,0,.85);border-color:var(--gold);color:var(--gold)}
 
 .fab-bar{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:10px;z-index:250}
-.top-actions{position:fixed;top:16px;left:16px;display:flex;align-items:center;z-index:260}
-.action-group{display:flex;align-items:center;gap:8px;padding:4px;border:1px solid rgba(201,168,76,.18);background:rgba(15,23,42,.74);border-radius:12px;box-shadow:0 10px 22px rgba(0,0,0,.22);backdrop-filter:blur(6px)}
-.top-btn{width:38px;height:38px;border-radius:10px;border:1px solid rgba(201,168,76,.18);background:linear-gradient(180deg,rgba(30,41,59,.9),rgba(15,23,42,.9));color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);padding:0;transition:all .18s ease}
-.top-btn:hover{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,rgba(39,55,77,.96),rgba(15,23,42,.96));transform:translateY(-1px)}
-.top-btn:active{transform:translateY(0)}
-.top-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;min-width:18px;text-align:center;border:2px solid rgba(15,23,42,.9)}
 .menu{position:absolute;top:48px;left:0;background:#111827;border:1px solid var(--border);border-radius:12px;min-width:180px;box-shadow:0 12px 28px rgba(0,0,0,.35);display:none;overflow:hidden;z-index:20}
 .menu.open{display:block}
 .menu button{display:block;width:100%;padding:10px 12px;background:none;border:none;color:var(--text);text-align:right;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;transition:background .15s ease,color .15s ease}
 .menu button:hover{background:rgba(201,168,76,.12);color:var(--gold)}
-.notif-list{display:none}
-.notif-item{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
-.notif-item:last-child{border-bottom:none}
-.notif-item .time{font-size:10px;color:var(--muted);margin-top:2px}
-
-.notifications-view{position:fixed;inset:0;background:rgba(2,6,23,.96);z-index:320;display:none;overflow-y:auto;padding:20px 20px 56px}
-.notifications-view.open{display:block}
-.notifications-shell{width:min(920px,100%);margin:0 auto;background:rgba(15,23,42,.82);border:1px solid rgba(201,168,76,.22);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
-.notifications-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 18px 14px;border-bottom:1px solid rgba(201,168,76,.14);background:linear-gradient(180deg,rgba(201,168,76,.08),rgba(15,23,42,.2))}
-.notifications-title{font-size:18px;font-weight:800;color:var(--gold)}
-.notifications-actions{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(201,168,76,.12)}
-.notifications-markall{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.26);color:var(--gold);padding:8px 14px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
-.notifications-close{width:36px;height:36px;border-radius:10px;border:1px solid rgba(201,168,76,.25);background:rgba(15,23,42,.8);color:var(--text);cursor:pointer;font-size:22px;line-height:1}
-.notifications-list{padding:10px 12px 18px}
-.notification-row{display:flex;align-items:flex-start;gap:12px;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.04);background:rgba(17,24,39,.72);margin-bottom:10px}
-.notification-row.unread{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.22)}
-.notification-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(201,168,76,.12);font-size:18px;flex-shrink:0}
-.notification-body{flex:1;min-width:0}
-.notification-text{font-size:13px;line-height:1.7;color:var(--text)}
-.notification-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:11px;color:var(--muted)}
-.notification-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block;box-shadow:0 0 12px rgba(201,168,76,.5)}
-.notification-empty{padding:30px 20px;text-align:center;color:var(--muted);font-size:14px}
-
-.notify-panel{position:fixed;top:16px;right:90px;z-index:310;width:min(360px,calc(100vw - 110px));display:flex;flex-direction:column;gap:10px;pointer-events:none}
-.catalog-toast{pointer-events:auto;background:rgba(17,24,39,.96);border:1px solid var(--border);border-right:4px solid var(--gold);border-radius:12px;padding:12px 14px;box-shadow:0 8px 18px rgba(0,0,0,.32);animation:toastIn .22s ease both}
-.catalog-toast.error{border-right-color:var(--red)}
-.catalog-toast.success{border-right-color:var(--green)}
-.catalog-toast.warning{border-right-color:var(--yellow)}
-.catalog-toast-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-.catalog-toast-title{font-weight:700;color:var(--gold);font-size:13px}
-.catalog-toast-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0}
-.catalog-toast-body{font-size:12px;color:var(--text);line-height:1.6}
-.catalog-toast-table{width:100%;margin-top:8px;border-collapse:collapse;font-size:11px}
-.catalog-toast-table th,.catalog-toast-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:right}
-.catalog-toast-table th{color:var(--muted);font-weight:600}
-.catalog-toast-table td strong{color:var(--gold)}
-.catalog-toast-list{margin:8px 0 0 0;padding-right:16px;max-height:140px;overflow:auto}
-.catalog-toast-list li{margin-bottom:4px;color:var(--text);font-size:11px}
-@keyframes toastIn{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes welcomeRise{0%{opacity:0;transform:translateY(30px) scale(.96)}20%{opacity:1}60%{opacity:1;transform:translateY(-6px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes welcomeGlow{0%,100%{box-shadow:0 0 0 rgba(201,168,76,0)}50%{box-shadow:0 0 32px rgba(201,168,76,.35)}}
 @keyframes welcomeLine{0%{opacity:0;width:0}30%{opacity:1}100%{opacity:1;width:110px}}
@@ -207,21 +162,6 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
   </div>
 </div>
 
-<div class="notify-panel" id="notifyPanel"></div>
-
-<div class="notifications-view" id="notificationsView">
-  <div class="notifications-shell">
-    <div class="notifications-header">
-      <div class="notifications-title">الإشعارات</div>
-      <button class="notifications-close" onclick="toggleNotifications(false)" aria-label="إغلاق">×</button>
-    </div>
-    <div class="notifications-actions">
-      <button class="notifications-markall" id="markAllReadBtn">تحديد الكل كمقروء</button>
-    </div>
-    <div class="notifications-list" id="notificationsPageList"></div>
-  </div>
-</div>
-
 <div class="header">
   <div class="h-top">
     <div class="logo">AF <em>/ كتالوج المستودعات</em></div>
@@ -249,17 +189,10 @@ body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);hei
   <button class="fb" onclick="setF('an',this)">AN</button>
   <button class="fb" onclick="setF('b',this)">B-</button>
   <button class="fb" onclick="setF('m',this)">M-</button>
-  <div style="display:flex; align-items:center; gap:8px; margin-right:auto;">
-    <div style="position:relative;">
-      <button class="top-btn" onclick="toggleNotifications()">🔔</button>
-      <span class="top-badge" id="notifBadge" style="display:none">0</span>
-      <div class="notif-list" id="notifList"></div>
-    </div>
-    <div style="position:relative;">
-      <button class="fb" id="filterMenuBtn" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
-      <div class="menu" id="topMenu">
-        <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
-      </div>
+  <div style="position:relative; margin-right:auto;">
+    <button class="fb" id="filterMenuBtn" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
+    <div class="menu" id="topMenu">
+      <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
     </div>
   </div>
 </div>
@@ -884,54 +817,6 @@ function updateStats(){
   document.getElementById('s3').textContent=`م3: ${DATA.filter(p=>p.warehouse==='مستودع 3').length}`;
 }
 
-function pushCatalogToast({title='تنبيه', body='', type='info', duration=5000, html=''} = {}){
-  const panel=document.getElementById('notifyPanel');
-  const toast=document.createElement('div');
-  toast.className=`catalog-toast ${type}`;
-  toast.innerHTML=`
-    <div class="catalog-toast-header">
-      <div class="catalog-toast-title">${esc(title)}</div>
-      <button class="catalog-toast-close" aria-label="إغلاق">×</button>
-    </div>
-    <div class="catalog-toast-body">${html ? html : esc(body)}</div>
-  `;
-  toast.querySelector('.catalog-toast-close').addEventListener('click', ()=>toast.remove());
-  panel.appendChild(toast);
-  setTimeout(()=>{ toast.style.opacity='0'; toast.style.transform='translateY(-8px)'; setTimeout(()=>toast.remove(), 240); }, duration);
-}
-
-function renderSyncSummary(result){
-  const summary=result.summary||{};
-  const details=result.details||{};
-  const total=summary.total||{};
-  const added=(details.added||[]).slice(0,10);
-  const deleted=(details.deleted||[]).slice(0,10);
-  const tableHtml=`
-    <table class="catalog-toast-table">
-      <thead>
-        <tr><th>النوع</th><th>العدد</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>التحديث</td><td><strong>${total.updated||0}</strong></td></tr>
-        <tr><td>الإضافة</td><td><strong>${total.added||0}</strong></td></tr>
-        <tr><td>الحذف</td><td><strong>${total.deleted||0}</strong></td></tr>
-        <tr><td>المتجاهلة</td><td><strong>${total.skippedRows||0}</strong></td></tr>
-      </tbody>
-    </table>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-      <div>
-        <div style="color:var(--gold);font-size:11px;font-weight:700;margin-bottom:4px;">أصناف مضافة</div>
-        <ul class="catalog-toast-list">${added.length ? added.map(item=>`<li>${esc(item.name || item.code || '—')} · ${esc(item.warehouse || '—')}</li>`).join('') : '<li>لا يوجد</li>'}</ul>
-      </div>
-      <div>
-        <div style="color:var(--red);font-size:11px;font-weight:700;margin-bottom:4px;">أصناف محذوفة</div>
-        <ul class="catalog-toast-list">${deleted.length ? deleted.map(item=>`<li>${esc(item.name || item.code || '—')} · ${esc(item.warehouse || '—')}</li>`).join('') : '<li>لا يوجد</li>'}</ul>
-      </div>
-    </div>
-  `;
-  pushCatalogToast({ title: 'ملخص المزامنة', body: '', type: 'success', duration: 12000, html: tableHtml });
-}
-
 function toggleMenu(button){
   const menu=document.getElementById('topMenu');
   const open=menu.classList.toggle('open');
@@ -944,166 +829,21 @@ function toggleMenu(button){
 
 async function syncWarehousesBtn(){
   try{
-    pushCatalogToast({ title: 'جارٍ المزامنة', body: 'يتم قراءة ملفات المستودعات وتحليلها...', type: 'warning', duration: 12000 });
     const response=await fetch('/api/sync-warehouses', {method:'POST'});
     const result=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(result.error || 'فشل المزامنة');
-    renderSyncSummary(result);
     await loadProductsFromDB();
-    await loadNotifications();
+    alert('تمت المزامنة بنجاح');
   }catch(err){
     console.error('فشل مزامنة المستودعات', err);
-    pushCatalogToast({ title: 'فشل المزامنة', body: err.message || 'فشل المزامنة', type: 'error', duration: 8000 });
+    alert(err.message || 'فشل المزامنة');
   }
-}
-
-function toggleNotifications(forceOpen){
-  const view=document.getElementById('notificationsView');
-  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !view.classList.contains('open');
-  const grid=document.querySelector('.gw');
-  const filters=document.querySelector('.filters');
-  const rbar=document.querySelector('.rbar');
-
-  view.classList.toggle('open', shouldOpen);
-  if(grid) grid.style.display = shouldOpen ? 'none' : '';
-  if(filters) filters.style.display = shouldOpen ? 'none' : '';
-  if(rbar) rbar.style.display = shouldOpen ? 'none' : '';
-
-  document.getElementById('topMenu').classList.remove('open');
-
-  if(shouldOpen){
-    loadNotifications('panel');
-    return;
-  }
-
-  localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
-  updateNotifBadge();
 }
 
 function showWelcomeScreen(){
   const overlay=document.getElementById('welcomeOverlay');
   setTimeout(()=>overlay.classList.add('hidden'), 5000);
 }
-
-function getNotificationIcon(type){
-  if(type==='new-product') return '🆕';
-  if(type==='low-stock') return '⚠️';
-  if(type==='sync') return '🔄';
-  return '🔔';
-}
-
-function formatNotificationTime(value){
-  const date=new Date(value);
-  if(Number.isNaN(date.getTime())) return '—';
-  const diff=Math.max(0, Date.now()-date.getTime());
-  const minutes=Math.floor(diff/60000);
-  if(minutes < 1) return 'الآن';
-  if(minutes < 60) return `منذ ${minutes} دقيقة`;
-  const hours=Math.floor(minutes/60);
-  if(hours < 24) return `منذ ${hours} ساعة`;
-  const days=Math.floor(hours/24);
-  return `منذ ${days} يوم`;
-}
-
-function isNotificationUnread(item, lastSeen){
-  if(!item || !item.created_at) return false;
-  if(!lastSeen) return true;
-  return new Date(item.created_at).getTime() > new Date(lastSeen).getTime();
-}
-
-async function loadNotifications(mode='dropdown'){
-  try{
-    const response=await fetch('/api/notifications');
-    const items=await response.json();
-    refreshNotificationsState(Array.isArray(items) ? items : []);
-
-    if(mode === 'panel'){
-      const list=document.getElementById('notificationsPageList');
-      const lastSeen=localStorage.getItem('lastSeenNotifTime');
-      if(!Array.isArray(items) || !items.length){
-        list.innerHTML='<div class="notification-empty">لا توجد إشعارات بعد</div>';
-        return;
-      }
-      list.innerHTML=items.map(item=>{
-        const unread=isNotificationUnread(item, lastSeen);
-        return `
-          <div class="notification-row ${unread ? 'unread' : ''}">
-            <div class="notification-icon">${getNotificationIcon(item.type)}</div>
-            <div class="notification-body">
-              <div class="notification-text">${esc(item.message)}</div>
-              <div class="notification-meta">
-                <span>${esc(formatNotificationTime(item.created_at))}</span>
-                ${unread ? '<span class="notification-dot" aria-label="غير مقروء"></span>' : '<span></span>'}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      return;
-    }
-
-    const list=document.getElementById('notifList');
-    if(!Array.isArray(items) || !items.length){
-      list.innerHTML='<div class="notif-item">لا توجد إشعارات بعد</div>';
-      return;
-    }
-    list.innerHTML=items.map(item=>`<div class="notif-item"><div>${esc(item.message)}</div><div class="time">${esc(new Date(item.created_at).toLocaleString('ar-EG'))}</div></div>`).join('');
-  }catch(err){
-    console.error('فشل تحميل الإشعارات', err);
-  }
-}
-
-function updateNotifBadge(){
-  const badge=document.getElementById('notifBadge');
-  const lastSeen=localStorage.getItem('lastSeenNotifTime');
-  const notifications=JSON.parse(localStorage.getItem('cachedNotifications')||'[]');
-  const unread=Array.isArray(notifications)?notifications.filter(item=>isNotificationUnread(item, lastSeen)).length:0;
-  if(unread>0){ badge.textContent=unread; badge.style.display='inline-flex'; }
-  else { badge.style.display='none'; }
-}
-
-function refreshNotificationsState(items){
-  localStorage.setItem('cachedNotifications', JSON.stringify(items||[]));
-  updateNotifBadge();
-}
-
-function markNotificationsAsRead(){
-  localStorage.setItem('lastSeenNotifTime', new Date().toISOString());
-  updateNotifBadge();
-  loadNotifications('panel');
-}
-
-setInterval(async()=>{
-  try{
-    const response=await fetch('/api/notifications');
-    const items=await response.json();
-    if(Array.isArray(items)) refreshNotificationsState(items);
-  }catch(err){ console.warn('فشل تحديث الإشعارات', err); }
-}, 60000);
-
-window.addEventListener('click', e=>{
-  const menu=document.getElementById('topMenu');
-  const actionGroup=document.querySelector('.action-group');
-  const view=document.getElementById('notificationsView');
-  if(!e.target.closest('.action-group') && !e.target.closest('#filterMenuBtn')){
-    menu.classList.remove('open');
-  }
-  if(!e.target.closest('#notificationsView') && !e.target.closest('.top-btn') && !e.target.closest('.notifications-close') && !e.target.closest('.notifications-markall')){
-    if(view && view.classList.contains('open')){
-      toggleNotifications(false);
-    }
-  }
-});
-
-document.getElementById('markAllReadBtn').addEventListener('click', markNotificationsAsRead);
-
-(async function initNotifications(){
-  try{
-    const response=await fetch('/api/notifications');
-    const items=await response.json();
-    if(Array.isArray(items)) refreshNotificationsState(items);
-  }catch(err){ console.warn('فشل تحميل الإشعارات الابتدائي', err); }
-})();
 
 showWelcomeScreen();
 

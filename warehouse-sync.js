@@ -8,17 +8,6 @@ const WAREHOUSE_FILES = [
   { name: 'مستودع 3', baseName: 'warehouse3' }
 ];
 
-function ensureSchema(db) {
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT NOT NULL,
-      message TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    )
-  `).run();
-}
-
 function isExcelErrorValue(value) {
   return typeof value === 'string' && value.trim().includes('#');
 }
@@ -108,11 +97,8 @@ function syncWarehouses(db, options = {}) {
     perWarehouse: {},
     details: { added: [], deleted: [] }
   };
-  const notifications = [];
 
   const transaction = db.transaction(() => {
-    ensureSchema(db);
-
     for (const warehouse of WAREHOUSE_FILES) {
       const filePath = buildWarehousePath(rootDir, warehouse.baseName);
       if (!fs.existsSync(filePath)) {
@@ -188,7 +174,6 @@ function syncWarehouses(db, options = {}) {
             code: normalized.code,
             warehouse: normalized.warehouse
           });
-          notifications.push({ type: 'new-product', message: `صنف جديد بالكتالوج: ${normalized.name}` });
         }
       }
 
@@ -196,26 +181,6 @@ function syncWarehouses(db, options = {}) {
       summary.perWarehouse[warehouse.name] = perWarehouseSummary;
     }
 
-    const lowQtyProducts = db.prepare('SELECT name, warehouse, qty_boxes FROM products WHERE qty_boxes > 0 AND qty_boxes < 2').all();
-    for (const product of lowQtyProducts) {
-      notifications.push({
-        type: 'low-stock',
-        message: `كمية منخفضة: ${product.name} (${product.qty_boxes} صندوق متبقي - ${product.warehouse})`
-      });
-    }
-
-    notifications.unshift({
-      type: 'sync',
-      message: `مزامنة المستودعات: ${summary.total.updated} تحديث، ${summary.total.added} إضافة، ${summary.total.deleted} حذف`
-    });
-
-    for (const notification of notifications) {
-      db.prepare('INSERT INTO notifications (type, message, created_at) VALUES (?, ?, ?)').run(
-        notification.type,
-        notification.message,
-        new Date().toISOString()
-      );
-    }
   });
 
   transaction();
@@ -223,7 +188,6 @@ function syncWarehouses(db, options = {}) {
 }
 
 module.exports = {
-  ensureSchema,
   syncWarehouses,
   normalizeWarehouseRow,
   WAREHOUSE_FILES

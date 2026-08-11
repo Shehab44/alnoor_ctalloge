@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
-const { syncWarehouses, ensureSchema } = require('./warehouse-sync');
+const { syncWarehouses } = require('./warehouse-sync');
 
 const app = express();
 const db = new Database('catalog.sqlite');
@@ -12,8 +12,6 @@ const db = new Database('catalog.sqlite');
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
-
-ensureSchema(db);
 
 function localOnly(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress || '';
@@ -136,16 +134,6 @@ app.post('/api/sync-warehouses', localOnly, (req, res) => {
   try {
     const result = syncWarehouses(db, { rootDir: __dirname });
     res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// API 8: جلب إشعارات
-app.get('/api/notifications', (req, res) => {
-  try {
-    const notifications = db.prepare('SELECT * FROM notifications ORDER BY id DESC LIMIT 100').all();
-    res.json(notifications);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
