@@ -214,38 +214,24 @@ body:not(.is-admin) .admin-only { display: none !important; }
 
 <div class="header">
   <div class="h-top">
-    <div class="logo" onclick="handleLogoClick()"><strong>AF</strong> <span>/ كتالوج المستودعات</span></div>
+    <button style="background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;margin-right:12px;margin-left:8px;" onclick="openSidebar()">☰</button>
+    <div class="logo" onclick="handleLogoClick()"><strong>AF</strong> <span>/ كتالوج</span></div>
     <div class="stats" id="stats">
       <span class="pill p1" id="s1">م1: —</span>
       <span class="pill p2" id="s2">م2: —</span>
       <span class="pill p3" id="s3">م3: —</span>
+    </div>
+    <div style="margin-right:auto;" class="admin-only-inline admin-only">
+      <button class="fb" id="filterMenuBtn" style="padding:4px 8px;font-size:16px;" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
+      <div class="menu" id="topMenu">
+        <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
+      </div>
     </div>
   </div>
   <div class="sw">
     <span class="sic"><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'></circle><line x1='21' y1='21' x2='16.65' y2='16.65'></line></svg></span>
     <input class="si" id="si" type="text" placeholder="ابحث بالاسم، الكود، رمز الطرد، الباركود..." autocomplete="off" spellcheck="false">
     <button class="sc" id="sc" onclick="clrS()">✕</button>
-  </div>
-</div>
-
-<div class="filters">
-  <button class="fb on" onclick="setF('all',this)">الكل</button>
-  <button class="fb" onclick="setF('w1',this)">مستودع 1</button>
-  <button class="fb" onclick="setF('w2',this)">مستودع 2</button>
-  <button class="fb" onclick="setF('w3',this)">مستودع 3</button>
-  <button class="fb" onclick="setF('img',this)">متوفر بصورة</button>
-  <button class="fb" onclick="setF('noimg',this)">بدون صورة</button>
-  <button class="fb" onclick="setF('b10',this)">كميات كبيرة (+10)</button>
-  <button class="fb" onclick="setF('an',this)">AN</button>
-  <button class="fb" onclick="setF('b',this)">B-</button>
-  <button class="fb" onclick="setF('m',this)">M-</button>
-  <button class="fb" onclick="setF('r',this)">R-</button>
-  <button class="fb" onclick="setF('x',this)">X-</button>
-  <div style="position:relative; margin-right:auto;" class="admin-only-inline admin-only">
-    <button class="fb" id="filterMenuBtn" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
-    <div class="menu" id="topMenu">
-      <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
-    </div>
   </div>
 </div>
 
@@ -266,10 +252,17 @@ body:not(.is-admin) .admin-only { display: none !important; }
     <div class="mname" id="mn"></div>
     <div class="mqty" id="mq"></div>
     <div class="mdetails" id="md"></div>
-    <button class="add-to-cart-btn" id="mAddToCart" onclick="addCurrentToCart()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-      إضافة للطلب
-    </button>
+    <div id="mCartControls" style="display:flex;align-items:center;gap:12px;margin-top:16px;">
+      <div class="cart-qty-ctrl" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:4px;border:1px solid rgba(255,255,255,0.1)">
+        <button id="mQtyPlus" onclick="changeMQty(1)">+</button>
+        <input type="text" id="mQtyVal" value="1" readonly style="width:50px;font-size:16px;font-weight:bold;color:var(--text);">
+        <button id="mQtyMinus" onclick="changeMQty(-1)">-</button>
+      </div>
+      <button class="add-to-cart-btn" id="mAddToCart" onclick="addCurrentToCart()" style="margin-top:0;flex:1;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        إضافة للطلب
+      </button>
+    </div>
   </div>
 </div>
 
@@ -399,24 +392,14 @@ function updateCartBadge() {
   else fab.classList.remove('visible');
 }
 
-function addCurrentToCart() {
-  const code = curCode;
-  const name = document.getElementById('mn').textContent;
-  
-  const existing = CART.find(c => c.code === code);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    CART.push({ code, name, qty: 1 });
-  }
-  saveCart();
-  showToast('سلة الطلبات', 'تمت إضافة الصنف بنجاح!', 'success');
-  clsM(); // Close product modal
-}
-
 function updateCartItemQty(code, delta) {
   const item = CART.find(c => c.code === code);
   if (!item) return;
+  // Prevent going above available max
+  if (delta > 0 && item.qty >= item.max) {
+    showToast('تنبيه', `الكمية القصوى المتوفرة هي ${item.max} صندوق`, 'info');
+    return;
+  }
   item.qty += delta;
   if (item.qty <= 0) {
     CART = CART.filter(c => c.code !== code);
@@ -424,6 +407,45 @@ function updateCartItemQty(code, delta) {
   saveCart();
   renderCartItems();
 }
+
+let windowMaxQty = 0;
+function changeMQty(delta) {
+  const input = document.getElementById('mQtyVal');
+  let val = parseInt(input.value) || 1;
+  val += delta;
+  if (val < 1) val = 1;
+  if (val > windowMaxQty) {
+    val = windowMaxQty;
+    showToast('تنبيه', `الكمية القصوى المتوفرة هي ${windowMaxQty} صندوق`, 'info');
+  }
+  input.value = val;
+}
+
+function addCurrentToCart() {
+  const code = curCode;
+  const name = document.getElementById('mn').textContent;
+  const qty = parseInt(document.getElementById('mQtyVal').value) || 1;
+  
+  if (windowMaxQty < 1) {
+    showToast('خطأ', 'الصنف غير متوفر حالياً', 'error');
+    return;
+  }
+
+  const existing = CART.find(c => c.code === code);
+  if (existing) {
+    if (existing.qty + qty > windowMaxQty) {
+      showToast('تنبيه', `لا يمكنك تجاوز الكمية المتوفرة الكلية (${windowMaxQty})`, 'error');
+      return;
+    }
+    existing.qty += qty;
+  } else {
+    CART.push({ code, name, qty, max: windowMaxQty });
+  }
+  saveCart();
+  showToast('سلة الطلبات', 'تمت الإضافة بنجاح!', 'success');
+  clsM(); // Close product modal
+}
+
 
 function renderCartItems() {
   const list = document.getElementById('cartItemsList');
@@ -742,27 +764,20 @@ function validateProductDuplication(p){
 }
 
 function run(){
+  renderCategoriesMenu();
   const q=curQ.toLowerCase().trim();
   filtered=DATA.filter(p=>{
     if(q){
       const s=[p.name,p.code,p.package_code,p.barcode].join(' ').toLowerCase();
       if(!s.includes(q)) return false;
     }
-    const hasW1 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 1');
-    const hasW2 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 2');
-    const hasW3 = p.stock && p.stock.some(s => s.warehouse_name === 'مستودع 3');
+    
+    if (currentCategory === 'has_img' && !hasImage(p)) return false;
+    if (currentCategory === 'no_img' && hasImage(p)) return false;
+    if (currentCategory !== 'all' && currentCategory !== 'has_img' && currentCategory !== 'no_img') {
+      if (getProductCategory(p) !== currentCategory) return false;
+    }
 
-    if(curF==='w1') return hasW1;
-    if(curF==='w2') return hasW2;
-    if(curF==='w3') return hasW3;
-    if(curF==='img') return hasImage(p);
-    if(curF==='noimg') return !hasImage(p);
-    if(curF==='b10') return p.qty_boxes>=10;
-    if(curF==='an') return (p.package_code||'').toUpperCase().startsWith('AN');
-    if(curF==='b') return /^B[-\s]/i.test(p.package_code||'');
-    if(curF==='m') return /^M[-\s]/i.test(p.package_code||'');
-    if(curF==='r') return /^R[-\s]/i.test(p.package_code||'');
-    if(curF==='x') return /^X[-\s]/i.test(p.package_code||'');
     return true;
   });
   if(sortByBoxes) filtered.sort((a,b)=>b.qty_boxes-a.qty_boxes);
@@ -867,8 +882,10 @@ function opnM(p){
   document.getElementById('mn').textContent=p.name;
 
   let stockHtml = '';
+  windowMaxQty = 0;
   if (p.stock && p.stock.length > 0) {
     p.stock.forEach(s => {
+      windowMaxQty += (parseFloat(s.qty_boxes) || 0);
       const bc = s.qty_boxes>=10?'var(--green)':s.qty_boxes>=1?'var(--yellow)':'var(--red)';
       const boxes = s.qty_boxes%1===0?s.qty_boxes:s.qty_boxes.toFixed(1);
       stockHtml += `
@@ -889,6 +906,16 @@ function opnM(p){
     });
   } else {
     stockHtml = '<div style="color:var(--muted);text-align:center;padding:15px;background:rgba(0,0,0,0.2);border-radius:10px;">غير متوفر في أي مستودع حالياً</div>';
+  }
+  windowMaxQty = Math.floor(windowMaxQty); // Max order in full boxes
+  document.getElementById('mQtyVal').value = 1;
+  const addToCartBtn = document.getElementById('mAddToCart');
+  if(windowMaxQty < 1) {
+    addToCartBtn.style.opacity = '0.5';
+    addToCartBtn.style.pointerEvents = 'none';
+  } else {
+    addToCartBtn.style.opacity = '1';
+    addToCartBtn.style.pointerEvents = 'auto';
   }
 
   document.getElementById('mq').innerHTML = stockHtml;
