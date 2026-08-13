@@ -395,36 +395,20 @@ body:not(.is-admin) .admin-only { display: none !important; }
 <script>
 // Categories Logic
 const CATEGORY_MAP = {
-  '0101': 'طاقة شمسية وكهربائيات', '0102': 'طاقة شمسية وكهربائيات',
-  '0103': 'أدوات منزلية',
-  '0104': 'عدة وخرداوات',
-  '0105': 'ملابس وشتوي',
-  '0106': 'ألعاب وأدوات سباحة',
-  '0107': 'مكياج وعناية',
+  '0101': 'طاقة ومستلزمات كهربائية', '0102': 'طاقة ومستلزمات كهربائية',
+  '0103': 'المنزل والمطبخ',
+  '0104': 'عدة وأدوات صناعية',
+  '0105': 'ملابس',
+  '0106': 'ألعاب وترفيه',
+  '0107': 'عناية ومستحضرات',
   '0108': 'إكسسوارات',
   '0109': 'قرطاسية'
-};
-const KEYWORD_MAP = {
-  'طاقة شمسية وكهربائيات': ['طاقة','لوح','بطارية','لمبة','ليد','كبل','كهرباء','شاحن'],
-  'أدوات منزلية': ['كاسة','صحن','معلقة','طنجرة','ممسحة','طاولة','كرسي','مطبخ','كوب','زبدية','صينية','ابريق','ترمس'],
-  'عدة وخرداوات': ['مفك','مفتاح','صاروخ','مقدح','برغي','قطاعة','زردية','بنسة','لاصق'],
-  'ملابس وشتوي': ['كلسات','طاقية','شال','قفازات','بنطال','تيشيرت','شورت','حذاء'],
-  'ألعاب وأدوات سباحة': ['لعبة','عوامة','طابة','مسدس','سيارة','دراجة','مسبح','بالون'],
-  'مكياج وعناية': ['مكياج','كريم','فرشاة','شامبو','عطر','لوشن','مرطب','مضخم'],
-  'إكسسوارات': ['خاتم','سنسال','طوق','حلق','سوار','ساعة','تعليقة'],
-  'قرطاسية': ['دفتر','قلم','ممحاة','براية','مسطرة','مقص','تجليد','صمغ','ملف']
 };
 
 function getProductCategory(p) {
   const codeStr = String(p.code || '').trim();
   const prefix = codeStr.substring(0, 4);
-  if (CATEGORY_MAP[prefix]) return CATEGORY_MAP[prefix];
-  
-  const name = String(p.name || '').toLowerCase();
-  for (const cat in KEYWORD_MAP) {
-    if (KEYWORD_MAP[cat].some(kw => name.includes(kw))) return cat;
-  }
-  return 'أخرى';
+  return CATEGORY_MAP[prefix] || 'أخرى';
 }
 
 let currentCategory = 'all';
@@ -471,7 +455,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (catParam) currentCategory = catParam;
 });
 
-const WHATSAPP_NUMBER = '00963000000000'; // قم بتعديل هذا الرقم
+const WHATSAPP_NUMBER = '0096181473454'; // قم بتعديل هذا الرقم
 
 let CART = JSON.parse(localStorage.getItem('catalog_cart') || '[]');
 
@@ -582,10 +566,23 @@ function sendWhatsApp() {
     // We still allow it for demo purposes, but in reality they must change it.
   }
   
-  let msg = "📦 *طلب جديد من الكتالوج*\n\n";
-  CART.forEach(item => {
-    msg += `- صنف: *${item.name}* (كود: ${item.code}) | الكمية: ${item.qty}\n`;
+  let msg = "📋 *طلبية جديدة*\n";
+  msg += "---------------------------\n";
+  msg += "👤 *العميل:* (الرجاء كتابة الاسم)\n";
+  
+  let today = new Date();
+  let dateStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+  msg += "📅 *التاريخ:* " + dateStr + "\n\n";
+  msg += "🛍️ *المنتجات المطلوبة:*\n";
+  
+  CART.forEach((item, index) => {
+    msg += (index + 1) + "️⃣ *" + item.name + "*\n";
+    msg += "   🔖 كود: " + item.code + "\n";
+    msg += "   📦 الكمية: " + item.qty + " صندوق\n\n";
   });
+  
+  msg += "---------------------------\n";
+  msg += "📝 *ملاحظات إضافية:* \n";
   
   const encoded = encodeURIComponent(msg);
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
