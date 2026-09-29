@@ -251,7 +251,7 @@ body:not(.is-admin) .admin-only { display: none !important; }
       <span class="pill p2" id="s2">م2: —</span>
       <span class="pill p3" id="s3">م3: —</span>
     </div>
-    <div style="margin-right:auto;" class="admin-only-inline admin-only">
+    <div style="margin-right:auto; position: relative; z-index: 50;" class="admin-only-inline admin-only">
       <button class="fb" id="filterMenuBtn" style="padding:4px 8px;font-size:16px;" onclick="event.stopPropagation(); toggleMenu(this)">⋮</button>
       <div class="menu" id="topMenu">
         <button onclick="syncWarehousesBtn()">مزامنة المستودعات</button>
